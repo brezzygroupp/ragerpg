@@ -1807,6 +1807,9 @@ local function poseEnemy(record, now, moving, distance)
     local intensity = moving and 1 or 0.12
     local rise = math.sin(phase * 2) * (moving and 0.13 or 0.05)
     local attackWave = attacking and math.sin(now * 18) * 0.24 or 0
+    local creature = model:GetAttribute("EnemyType")
+    local stagger = math.max(0, 1 - (now - (record.lastHit or -100)) / 0.35)
+    local windup = record.attack and math.clamp((now - record.attack.started) / record.attack.windup, 0, 1) or 0
     local root = model:GetPivot()
     for _, joint in ipairs(record.rig) do
         local p = joint.part
@@ -1815,17 +1818,18 @@ local function poseEnemy(record, now, moving, distance)
             local transform = CFrame.new(0, rise, 0)
             if name == "Leg" or name == "ScorpionLeg" then
                 local side = joint.offset.Position.X >= 0 and 1 or -1
-                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and 0 or math.pi)) * 0.26 * intensity, 0, 0)
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and 0 or math.pi)) * (creature == "scorpion" and 0.42 or 0.32) * intensity, 0, 0)
             elseif name == "Arm" or name == "Claw" then
                 local side = joint.offset.Position.X >= 0 and 1 or -1
                 transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and math.pi or 0)) * 0.24 * intensity - attackWave, 0, side * attackWave)
-            elseif name == "Tail" or name == "Stinger" or name == "StingerTip" then
-                transform = transform * CFrame.Angles(math.sin(phase * 0.6) * 0.15, math.sin(phase * 0.7) * 0.25, 0)
+            elseif name == "Tail" or name == "Stinger" or name == "StingerTip" or name == "TailSegment" then
+                transform = transform * CFrame.Angles(math.sin(phase * 0.6) * 0.15 - (creature == "scorpion" and windup * 0.45 or 0), math.sin(phase * 0.7) * 0.25, 0)
             elseif name == "Head" or name == "HelmetCrest" or name == "CrownHorn" or name == "Hood" or name == "Mask" then
                 transform = transform * CFrame.Angles(-attackWave * 0.7, math.sin(phase * 0.35) * 0.08, 0)
-            elseif name == "SpiritFlame" or name == "MireSpike" then
+            elseif name == "SpiritFlame" or name == "MireSpike" or name == "SpiritCore" or name == "InnerCore" then
                 transform = transform * CFrame.new(0, math.sin(phase + joint.offset.Position.X) * 0.4, 0)
             end
+            if stagger > 0 then transform = transform * CFrame.Angles(math.rad(14) * stagger, 0, math.rad(10) * stagger) end
             p.CFrame = root * joint.offset * transform
         end
     end
@@ -1849,11 +1853,16 @@ local function hurtEnemy(player, record, amount)
 	if record.health <= 0 then return end
 	record.health = math.max(0, record.health - amount)
 	record.target = player
+    record.lastHit = os.clock()
 	updateEnemyLabel(record)
 	if record.health > 0 then return end
 	cancelMonsterAttack(record)
 	record.model:SetAttribute("Alive", false)
-	visibility(record.model, false, record.appearance)
+    record.model:SetAttribute("AttackState", "Dead")
+    record.model:PivotTo(record.model:GetPivot() * CFrame.Angles(math.rad(62), 0, math.rad(10)))
+    task.delay(0.4, function()
+        if record.model.Parent and record.health <= 0 then visibility(record.model, false, record.appearance) end
+    end)
 	local profile = Profiles.Get(player)
 	if profile then
 		profile.stats.kills += 1
@@ -1869,6 +1878,8 @@ local function hurtEnemy(player, record, amount)
 		record.model:PivotTo(record.home)
 		record.health, record.target, record.nextAttack, record.attack = record.config.health, nil, 0, nil
 		record.model:SetAttribute("Alive", true)
+        record.model:SetAttribute("AttackState", "Idle")
+        record.lastHit = nil
 		visibility(record.model, true, record.appearance)
 		updateEnemyLabel(record)
 	end)
