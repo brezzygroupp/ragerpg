@@ -158,6 +158,50 @@ end
 
 local animationDurations = {basic=0.52, cleave=0.82, gather=0.68, potion=0.72, hit=0.34}
 local attackCombo = {}
+local lastLocalAttack = 0
+local swordVisuals = {}
+
+local function ensureSwordVisual(character)
+    local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+    if not hand or not hand:IsA("BasePart") then return end
+    local existing = swordVisuals[character]
+    if existing and existing.Parent and existing:FindFirstChild("Grip") then return end
+    local sword = Instance.new("Model")
+    sword.Name = "BrumavaleCombatSword"
+    local function segment(name, size, color, material, offset)
+        local p = Instance.new("Part")
+        p.Name = name
+        p.Size = size
+        p.Color = color
+        p.Material = material
+        p.CanCollide = false
+        p.CanQuery = false
+        p.CanTouch = false
+        p.Massless = true
+        p.Anchored = false
+        p.CFrame = hand.CFrame * offset
+        p.Parent = sword
+        return p
+    end
+    local grip = segment("Grip", Vector3.new(0.35, 1.35, 0.35), Color3.fromRGB(72, 48, 35), Enum.Material.Wood, CFrame.new(0, -0.65, -0.15))
+    local guard = segment("Crossguard", Vector3.new(1.7, 0.3, 0.35), Color3.fromRGB(225, 178, 83), Enum.Material.Metal, CFrame.new(0, -1.55, -0.15))
+    local blade = segment("Blade", Vector3.new(0.42, 3.9, 0.16), Color3.fromRGB(208, 225, 230), Enum.Material.Metal, CFrame.new(0, -3.6, -0.15))
+    local point = segment("BladeTip", Vector3.new(0.28, 0.7, 0.12), Color3.fromRGB(239, 246, 255), Enum.Material.Metal, CFrame.new(0, -5.8, -0.15))
+    for _, p in ipairs({guard, blade, point}) do
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = grip
+        weld.Part1 = p
+        weld.Parent = p
+    end
+    local handWeld = Instance.new("Weld")
+    handWeld.Name = "HandMount"
+    handWeld.Part0 = hand
+    handWeld.Part1 = grip
+    handWeld.C0 = hand.CFrame:ToObjectSpace(grip.CFrame)
+    handWeld.Parent = grip
+    sword.Parent = character
+    swordVisuals[character] = sword
+end
 local function startCombatAnimation(actor, action)
     if typeof(actor) ~= "Instance" or not actor:IsA("Player") or actor.Parent ~= Players or type(action) ~= "string" then return end
     local character = actor.Character
@@ -169,6 +213,7 @@ local function startCombatAnimation(actor, action)
     local previous = combatAnimations[character]
     if previous then resetCombatAnimation(previous) end
     if action == "basic" then attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1 end
+    if action == "basic" or action == "cleave" then ensureSwordVisual(character) end
     combatAnimations[character] = {
         action=action, combo=attackCombo[character] or 1, started=os.clock(), duration=animationDurations[action],
         motors={
@@ -324,7 +369,10 @@ FX.OnClientEvent:Connect(function(event, payload)
         local actor = payload.player
         local action = payload.skill or payload.action
         if typeof(actor) == "Instance" and actor:IsA("Player") and actor.Parent == Players and type(action) == "string" then
-            startCombatAnimation(actor, action)
+            -- Local prediction already started this attack: avoid rewinding its pose.
+            if actor ~= player or (event ~= "playerAttack" or os.clock() - lastLocalAttack > 1.1) then
+                startCombatAnimation(actor, action)
+            end
             actionEffect(actor, action, payload.target)
         end
     elseif event == "monsterWindup" then
@@ -443,6 +491,8 @@ local function attack(skill)
         toast("Aproxime-se do alvo para atacar.") return
     end
     cooldowns[skill] = os.clock() + (skill == "cleave" and 5 or 0.65)
+    lastLocalAttack = os.clock()
+    startCombatAnimation(player, skill)
     send("attack", {target = selectedEnemy, skill = skill})
 end
 local function usePotion()
