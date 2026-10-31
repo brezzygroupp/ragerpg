@@ -553,11 +553,7 @@ function World.Build()
         part(ground, "RoadNS", Vector3.new(14, 0.12, size), center + Vector3.new(0, 0.06, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         part(ground, "RoadEW", Vector3.new(size, 0.1, 14), center + Vector3.new(0, 0.05, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         regionTitle(decor, region, center)
-        if not region.safe then
-            local exit = portal(portals, center + Vector3.new(0, 0, 65), "town", "Voltar a Porto Bruma", C.teal)
-            exit:SetAttribute("OriginRegion", region.id)
-            exit:SetAttribute("ArrivalOffset", Vector3.new(0,0,82))
-        end
+        -- Border portals are placed by the adjacency graph below.
     end
     -- Expanded islands are connected through travel portals instead of short bridges.
 
@@ -596,24 +592,21 @@ function World.Build()
     for _, location in ipairs({{-18, 15}, {18, 15}, {-56, 24}, {56, 24}, {-20, -50}, {20, -50}}) do
         lantern(decor, Vector3.new(location[1], 0, location[2]))
     end
-    -- Dedicated portal plaza: evenly spaced, every gate has a clear approach.
-    local townGates = {}
-    local destinations = {}
-    for _, region in ipairs(Config.Regions) do if not region.safe then table.insert(destinations,region) end end
-    local columns = 6
-    for index, region in ipairs(destinations) do
-        local column = (index-1)%columns
-        local line = math.floor((index-1)/columns)
-        local x = (column-2.5)*35
-        local z = -160 - line*45
-        local pos = Vector3.new(x,0,z)
-        local gate = portal(portals,pos,region.id,region.name,rgb(region.color,C.teal),nil)
-        gate:SetAttribute("OriginRegion","town")
-        gate:SetAttribute("ArrivalOffset", Vector3.new(0,0,90))
-    end
-    part(ground,"PortalPlaza",Vector3.new(240,.2,135),Vector3.new(0,.1,-183),Color3.fromRGB(117,119,120),Enum.Material.Cobblestone)
-    for _, x in ipairs({-116,116}) do
-        lantern(decor,Vector3.new(x,0,-183))
+    -- Each gate connects physically neighboring provinces, not a city hub.
+    for _, origin in ipairs(Config.Regions) do
+        local c=vector(origin.center)
+        for _, dest in ipairs(Config.Regions) do
+            local dx=dest.center[1]-origin.center[1]
+            local dz=dest.center[3]-origin.center[3]
+            if (math.abs(dx)==2200 and dz==0) or (math.abs(dz)==2200 and dx==0) then
+                local dir=Vector3.new(dx==0 and 0 or dx/math.abs(dx),0,dz==0 and 0 or dz/math.abs(dz))
+                local gate=portal(portals,c+dir*(origin.size*.36),dest.id,dest.name,rgb(dest.color,C.teal),dx~=0 and math.pi/2 or nil)
+                gate:SetAttribute("OriginRegion",origin.id)
+                local roadCenter=c+dir*(origin.size*.21)
+                local roadSize=dx~=0 and Vector3.new(origin.size*.34,.14,15) or Vector3.new(15,.14,origin.size*.34)
+                part(ground,"GateTrail",roadSize,roadCenter+Vector3.new(0,.12,0),C.paleWood,Enum.Material.Ground)
+            end
+        end
     end
 
     -- Resource placements are curated around the roads, never on arrival areas.
