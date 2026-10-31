@@ -5,7 +5,7 @@
     "src/shared/CombatMath.lua": "5cff9e50f10243cbc7ac14b96216328d91f51298a8a009023bda5ef5bb00253e",
     "src/server/Economy.lua": "bba2cef0c28ba2697efe80ea29fb4324b686b68cd95d4d6feda91aaffaa8f29f",
     "src/server/Profiles.lua": "0271505a424667b62d89988c80f35d00ae3fc91ac08510db7843c5cbc2887e2e",
-    "src/server/World.lua": "95639f91c5875d296be84fbe896fec0fe318b9d879aefe04535a6c8678c94555",
+    "src/server/World.lua": "79efdced816033af6c14026a4db16338d4e571319fe8e55e2e06a764b71e9fe3",
     "src/server/Main.server.lua": "eb3980fcebd5dfe19bcb341e0b1de74e63a97d90c24496ac6d8c19dbdc687c44",
     "src/client/Client.client.lua": "6f993d15057a4375e27e71b0f7325fb73612386a581ea336923e19b63fcee077"
   }
