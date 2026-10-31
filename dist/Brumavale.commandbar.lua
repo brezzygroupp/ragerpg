@@ -2528,6 +2528,7 @@ end
 -- Default Roblox sword slash/lunge are keyframed and work on standard R15/R6 rigs.
 local nativeTracks = {}
 local comboIndex = {}
+local lastComboAt = {}
 local nativeIds = {
     R15 = {basic="522635514", cleave="522638767", gather="522635514", hit="522638767"},
     R6 = {basic="129967390", cleave="129967478", gather="129967390", hit="129967478"},
@@ -2539,7 +2540,9 @@ local function playNativeAnimation(actor, action)
     local rigType = humanoid.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
     local combo = comboIndex[character] or 1
     local id = nativeIds[rigType][action]
-    if action == "basic" and combo == 3 then id = nativeIds[rigType].cleave end
+    -- Deliberately avoid the spinning lunge; short horizontal slashes read as swordplay.
+    if action == "basic" and combo == 3 then id = nativeIds[rigType].basic end
+    if action == "cleave" then id = nativeIds[rigType].basic end
     if not id then return false, "sem animacao para " .. action end
     local animator = humanoid:FindFirstChildOfClass("Animator")
     if not animator then
@@ -2558,7 +2561,7 @@ local function playNativeAnimation(actor, action)
     end
     track.Priority = Enum.AnimationPriority.Action4
     track.Looped = false
-    local played, err = pcall(function() track:Play(0.08, 1, action == "cleave" and 0.82 or (action == "basic" and (combo == 2 and 1.21 or combo == 3 and 0.9 or 1.06) or 1)) end)
+    local played, err = pcall(function() track:Play(0.10, 1, action == "cleave" and 0.72 or (action == "basic" and (combo == 2 and 1.08 or combo == 3 and 0.88 or 0.98) or 1)) end)
     if not played then return false, tostring(err) end
     nativeTracks[character] = {track=track, action=action}
     track.Stopped:Once(function()
@@ -2585,10 +2588,10 @@ local function swingSword(character, action, combo)
     end
     local rest = swing and swing.weld == weld and swing.base or weld.C0
     local direction = combo == 2 and -1 or 1
-    local windup = action == "cleave" and 0.24 or 0.14
-    local release = action == "cleave" and 0.29 or 0.20
-    local raised = rest * CFrame.Angles(math.rad(-42), 0, math.rad(42 * direction))
-    local follow = rest * CFrame.Angles(math.rad(70), math.rad(18 * direction), math.rad(-72 * direction))
+    local windup = action == "cleave" and 0.23 or 0.17
+    local release = action == "cleave" and 0.32 or 0.23
+    local raised = rest * CFrame.Angles(math.rad(-24), 0, math.rad(25 * direction))
+    local follow = rest * CFrame.Angles(math.rad(36), math.rad(12 * direction), math.rad(-48 * direction))
     local sequence = {weld=weld, base=rest, tweens={}}
     swordSwings[character] = sequence
     local function tween(goal, seconds, easing)
@@ -2665,7 +2668,10 @@ local function startCombatAnimation(actor, action)
     local previous = combatAnimations[character]
     if previous then resetCombatAnimation(previous) end
     if action == "basic" then
+        local now = os.clock()
+        if now - (lastComboAt[character] or -10) > 1.4 then attackCombo[character] = 0 end
         attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1
+        lastComboAt[character] = now
         comboIndex[character] = attackCombo[character]
     end
     if action == "basic" or action == "cleave" then
