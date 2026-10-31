@@ -1,0 +1,2505 @@
+-- BRUMAVALE · instalador offline para a Command Bar do Roblox Studio
+-- Cole TODO este arquivo em View/Exibir > Command Bar, fora do modo Play.
+-- Código-fonte original, sem HTTP, require(assetId), plugins ou assets externos.
+local RunService = game:GetService("RunService")
+assert(RunService:IsStudio() and not RunService:IsRunning(), "Execute na Command Bar do Studio, com o teste parado.")
+local Sources = {}
+
+Sources.Config = [=[
+-- Brumavale: all balance data is shared; only the server changes player state.
+local Config = {}
+Config.Version = 1
+Config.StartingSilver = 120
+Config.Capacity = 160
+Config.MarketTax = 0.05
+Config.MaxListings = 5
+Config.DataStoreName = "Brumavale_Profiles_v1"
+Config.SaveInterval = 60
+Config.ProfileLeaseSeconds = 180
+Config.Items = {
+	wood = {name="Madeira",kind="resource",tier=1,buy=7,sell=3,weight=1},
+	stone = {name="Pedra",kind="resource",tier=1,buy=6,sell=2,weight=1},
+	fiber = {name="Fibra",kind="resource",tier=1,buy=6,sell=2,weight=0.5},
+	ore = {name="Minério de ferro",kind="resource",tier=2,buy=14,sell=6,weight=2},
+	hide = {name="Couro",kind="resource",tier=2,buy=16,sell=7,weight=1},
+	crystal = {name="Cristal de bruma",kind="resource",tier=3,buy=45,sell=20,weight=1},
+	plank = {name="Tábua",kind="resource",tier=1,buy=20,sell=8,weight=1},
+	ingot = {name="Lingote",kind="resource",tier=2,buy=40,sell=16,weight=2},
+	cloth = {name="Tecido",kind="resource",tier=1,buy=18,sell=7,weight=0.5},
+	sword1 = {name="Espada de viajante",kind="weapon",tier=1,buy=85,sell=30,weight=4,damage=14},
+	sword2 = {name="Lâmina de ferro",kind="weapon",tier=2,buy=290,sell=110,weight=5,damage=24},
+	sword3 = {name="Lâmina da aurora",kind="weapon",tier=3,buy=850,sell=320,weight=5,damage=38},
+	armor1 = {name="Colete de viajante",kind="armor",tier=1,buy=70,sell=25,weight=5,defense=3},
+	armor2 = {name="Armadura de ferro",kind="armor",tier=2,buy=350,sell=130,weight=8,defense=8},
+	potion = {name="Poção de cura",kind="consumable",tier=1,buy=28,sell=10,weight=0.5,heal=55},
+}
+Config.ItemOrder = {"wood","stone","fiber","ore","hide","crystal","plank","ingot","cloth","sword1","sword2","sword3","armor1","armor2","potion"}
+Config.Recipes = {
+	plank = {ingredients={wood=3},amount=1,fee=1,level=1},
+	ingot = {ingredients={ore=3,wood=1},amount=1,fee=3,level=2},
+	cloth = {ingredients={fiber=3},amount=1,fee=1,level=1},
+	sword1 = {ingredients={wood=4,stone=3},amount=1,fee=8,level=1},
+	armor1 = {ingredients={cloth=3,hide=1},amount=1,fee=10,level=1},
+	potion = {ingredients={fiber=3},amount=1,fee=5,level=1},
+	sword2 = {ingredients={ingot=4,plank=2},amount=1,fee=25,level=2},
+	armor2 = {ingredients={ingot=5,cloth=3,hide=3},amount=1,fee=30,level=3},
+	sword3 = {ingredients={ingot=6,plank=3,crystal=6},amount=1,fee=90,level=4},
+}
+Config.Regions = {
+	{id="town",name="Porto Bruma",center={0,0,0},size=240,safe=true,level=1,color={74,113,104}},
+	{id="meadow",name="Prados do Sol",center={0,0,270},size=240,safe=false,level=1,color={109,151,77}},
+	{id="forest",name="Bosque Âmbar",center={270,0,0},size=240,safe=false,level=2,color={55,101,78}},
+	{id="quarry",name="Pedreira Cinzenta",center={-270,0,0},size=240,safe=false,level=3,color={116,119,129}},
+	{id="ruins",name="Ruínas da Aurora",center={0,0,-270},size=240,safe=false,level=4,color={77,82,113}},
+}
+Config.Enemies = {
+	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18},
+	wolf = {name="Lobo âmbar",health=78,damage=11,speed=13,xp=40,silver=14,loot={hide=2},aggro=40,respawn=23},
+	bandit = {name="Saqueador",health=105,damage=14,speed=10,xp=58,silver=22,loot={ore=2},aggro=38,respawn=26},
+	guardian = {name="Sentinela da aurora",health=240,damage=21,speed=8,xp=130,silver=60,loot={crystal=3},aggro=40,respawn=40},
+}
+Config.Nodes = {
+	tree = {name="Árvore",item="wood",amount=3,respawn=18,xp=9,color={111,79,50}},
+	rock = {name="Rocha",item="stone",amount=3,respawn=20,xp=9,color={135,141,150}},
+	fiber = {name="Fibras silvestres",item="fiber",amount=3,respawn=16,xp=8,color={191,185,105}},
+	ore = {name="Veio de ferro",item="ore",amount=2,respawn=25,xp=15,color={156,127,107}},
+	crystal = {name="Cristal de bruma",item="crystal",amount=1,respawn=35,xp=22,color={95,221,228}},
+}
+Config.Quests = {
+	{id="first_harvest",title="Mãos à obra",description="Colete 12 unidades de recursos nos prados.",stat="gathered",target=12,rewardSilver=45,rewardXP=40},
+	{id="first_hunt",title="Caminhos seguros",description="Derrote 4 inimigos nas regiões selvagens.",stat="kills",target=4,rewardSilver=80,rewardXP=70},
+	{id="artisan",title="Aprendiz da forja",description="Fabrique 5 itens na forja de Porto Bruma.",stat="crafted",target=5,rewardSilver=120,rewardXP=100},
+	{id="explorer",title="Guardião dos caminhos",description="Derrote 15 inimigos ao todo.",stat="kills",target=15,rewardSilver=250,rewardXP=200},
+}
+function Config.XPForLevel(level)
+	return 75 * (level - 1) * level
+end
+function Config.LevelForXP(xp)
+	return math.min(50, math.floor((1 + math.sqrt(1 + 4 * math.max(0,xp) / 75)) / 2))
+end
+return Config
+]=]
+
+Sources.Economy = [=[
+-- Pure, deterministic transactions. The server supplies all trusted configuration.
+local Config
+if script then
+	Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Brumavale"):WaitForChild("Config"))
+else
+	Config = require("../shared/Config")
+end
+local Economy = {}
+local MAX_VALUE = 1000000000
+
+local function integer(value, limit)
+	return type(value) == "number" and value == value and value >= 1 and value <= (limit or 99) and value % 1 == 0
+end
+local function bounded(value, fallback, ceiling)
+	if type(value) ~= "number" or value ~= value or value < 0 or value == math.huge then return fallback end
+	return math.min(math.floor(value), ceiling or MAX_VALUE)
+end
+local function validItem(item)
+	return type(item) == "string" and Config.Items[item] ~= nil
+end
+local function copyInventory(inventory)
+	local result = {}
+	for id, count in pairs(inventory) do result[id] = count end
+	return result
+end
+local function protected(profile, item)
+	return profile.equipment.weapon == item or profile.equipment.armor == item
+end
+local function canRemove(profile, item, count)
+	if not validItem(item) or not integer(count) then return false, "Quantidade ou item inválido." end
+	if (profile.inventory[item] or 0) < count then return false, "Você não possui essa quantidade." end
+	if protected(profile, item) and profile.inventory[item] == count then return false, "Equipe outro item antes de remover este." end
+	return true
+end
+function Economy.NewProfile()
+	return {
+		version=1, silver=Config.StartingSilver, xp=0,
+		inventory={sword1=1,armor1=1,potion=3},
+		equipment={weapon="sword1",armor="armor1"},
+		stats={gathered=0,kills=0,crafted=0}, questIndex=1,
+	}
+end
+function Economy.Sanitize(raw)
+	if type(raw) ~= "table" then return Economy.NewProfile() end
+	local result = Economy.NewProfile()
+	result.silver = bounded(raw.silver, Config.StartingSilver)
+	result.xp = bounded(raw.xp, 0, Config.XPForLevel(50))
+	result.inventory = {}
+	if type(raw.inventory) == "table" then
+		for id, count in pairs(raw.inventory) do
+			if validItem(id) then
+				local n = bounded(count, 0, 100000)
+				if n > 0 then result.inventory[id] = n end
+			end
+		end
+	end
+	result.equipment = {}
+	if type(raw.equipment) == "table" then
+		for slot, kind in pairs({weapon="weapon",armor="armor"}) do
+			local id = raw.equipment[slot]
+			if validItem(id) and Config.Items[id].kind == kind and (result.inventory[id] or 0) > 0 then result.equipment[slot] = id end
+		end
+	end
+	if type(raw.stats) == "table" then
+		for id in pairs(result.stats) do result.stats[id] = bounded(raw.stats[id], 0) end
+	end
+	result.questIndex = math.max(1, bounded(raw.questIndex, 1, #Config.Quests + 1))
+	return result
+end
+function Economy.Weight(profile)
+	local weight = 0
+	for id, count in pairs(profile.inventory) do
+		local item = Config.Items[id]
+		if item then weight = weight + item.weight * count end
+	end
+	return weight
+end
+function Economy.CanAdd(profile, item, count)
+	if not validItem(item) or not integer(count) then return false, "Quantidade ou item inválido." end
+	if Economy.Weight(profile) + Config.Items[item].weight * count > Config.Capacity then return false, "Mochila cheia. Venda ou use alguns itens." end
+	return true
+end
+function Economy.Add(profile, item, count)
+	local ok, message = Economy.CanAdd(profile, item, count)
+	if not ok then return false, message end
+	profile.inventory[item] = (profile.inventory[item] or 0) + count
+	return true, "Item recebido."
+end
+function Economy.Remove(profile, item, count)
+	local ok, message = canRemove(profile, item, count)
+	if not ok then return false, message end
+	local remaining = profile.inventory[item] - count
+	profile.inventory[item] = remaining > 0 and remaining or nil
+	return true, "Item removido."
+end
+function Economy.Buy(profile, item, count)
+	local ok, message = Economy.CanAdd(profile, item, count)
+	if not ok then return false, message end
+	local price = Config.Items[item].buy * count
+	if profile.silver < price then return false, "Prata insuficiente." end
+	profile.silver = profile.silver - price
+	profile.inventory[item] = (profile.inventory[item] or 0) + count
+	return true, "Compra realizada."
+end
+function Economy.Sell(profile, item, count)
+	local ok, message = canRemove(profile, item, count)
+	if not ok then return false, message end
+	local value = Config.Items[item].sell * count
+	if profile.silver + value > MAX_VALUE then return false, "Limite de prata atingido." end
+	Economy.Remove(profile, item, count)
+	profile.silver = profile.silver + value
+	return true, "Venda realizada."
+end
+function Economy.Craft(profile, recipeId, count)
+	if type(recipeId) ~= "string" or not integer(count) then return false, "Receita ou quantidade inválida." end
+	local recipe = Config.Recipes[recipeId]
+	if not recipe then return false, "Receita desconhecida." end
+	if Config.LevelForXP(profile.xp) < recipe.level then return false, "Seu nível ainda é baixo para esta receita." end
+	local fee = recipe.fee * count
+	if profile.silver < fee then return false, "Prata insuficiente para a fabricação." end
+	local nextInventory = copyInventory(profile.inventory)
+	for id, amount in pairs(recipe.ingredients) do
+		local remaining = (nextInventory[id] or 0) - amount * count
+		if remaining < 0 or (protected(profile,id) and remaining < 1) then return false, "Faltam materiais para fabricar." end
+		nextInventory[id] = remaining > 0 and remaining or nil
+	end
+	nextInventory[recipeId] = (nextInventory[recipeId] or 0) + recipe.amount * count
+	if Economy.Weight({inventory=nextInventory}) > Config.Capacity then return false, "Mochila cheia para o resultado." end
+	profile.inventory = nextInventory
+	profile.silver = profile.silver - fee
+	profile.stats.crafted = math.min(MAX_VALUE, profile.stats.crafted + recipe.amount * count)
+	profile.xp = math.min(Config.XPForLevel(50), profile.xp + 6 * count)
+	return true, "Fabricação concluída."
+end
+function Economy.Equip(profile, item)
+	if not validItem(item) or (profile.inventory[item] or 0) < 1 then return false, "Você não possui esse item." end
+	local kind = Config.Items[item].kind
+	if kind ~= "weapon" and kind ~= "armor" then return false, "Este item não pode ser equipado." end
+	profile.equipment[kind] = item
+	return true, Config.Items[item].name .. " equipado."
+end
+function Economy.Consume(profile, item)
+	if not validItem(item) or Config.Items[item].kind ~= "consumable" then return false, "Consumível inválido." end
+	local ok, message = Economy.Remove(profile, item, 1)
+	if not ok then return false, message end
+	return true, "Poção utilizada.", Config.Items[item].heal
+end
+function Economy.Grant(profile, loot, silver, xp)
+	if type(loot) ~= "table" or type(silver) ~= "number" or type(xp) ~= "number"
+		or silver ~= silver or xp ~= xp or silver < 0 or xp < 0 or silver > MAX_VALUE or xp > MAX_VALUE
+		or silver % 1 ~= 0 or xp % 1 ~= 0 then return false, "Recompensa inválida." end
+	local nextInventory = copyInventory(profile.inventory)
+	for id, count in pairs(loot) do
+		if not validItem(id) or not integer(count) then return false, "Recompensa inválida." end
+		nextInventory[id] = (nextInventory[id] or 0) + count
+	end
+	local nextWeight = Economy.Weight({inventory=nextInventory})
+	if nextWeight > Config.Capacity and nextWeight > Economy.Weight(profile) then return false, "Mochila cheia para o saque." end
+	if profile.silver + silver > MAX_VALUE then return false, "Limite de prata atingido." end
+	profile.inventory = nextInventory
+	profile.silver = profile.silver + silver
+	profile.xp = math.min(Config.XPForLevel(50), profile.xp + xp)
+	return true, "Recompensa recebida."
+end
+function Economy.Stats(profile)
+	local weapon = Config.Items[profile.equipment.weapon]
+	local armor = Config.Items[profile.equipment.armor]
+	local level = Config.LevelForXP(profile.xp)
+	return {damage=(weapon and weapon.damage or 5) + (level - 1) * 2, defense=(armor and armor.defense or 0),maxHealth=100+(level-1)*8,level=level}
+end
+function Economy.Quest(profile)
+	local quest = Config.Quests[profile.questIndex]
+	if not quest then return {id="done",title="Viajante experiente",description="Todos os contratos foram concluídos. Explore e negocie!",current=0,target=0,rewardSilver=0,rewardXP=0,complete=false} end
+	local current = math.min(quest.target, profile.stats[quest.stat] or 0)
+	return {id=quest.id,title=quest.title,description=quest.description,current=current,target=quest.target,rewardSilver=quest.rewardSilver,rewardXP=quest.rewardXP,complete=current>=quest.target}
+end
+function Economy.ClaimQuest(profile)
+	local quest = Economy.Quest(profile)
+	if quest.id == "done" then return false, "Todos os contratos já foram concluídos." end
+	if not quest.complete then return false, "Conclua o objetivo do contrato primeiro." end
+	local ok, message = Economy.Grant(profile, {}, quest.rewardSilver, quest.rewardXP)
+	if not ok then return false, message end
+	profile.questIndex = profile.questIndex + 1
+	return true, "Contrato concluído! Prata e experiência recebidas."
+end
+return Economy
+]=]
+
+Sources.Profiles = [=[
+-- Server-only persistence. Studio deliberately uses disposable profiles.
+-- A lease protects one account from concurrent servers; it is not a two-account
+-- transaction protocol. The session market must not be advertised as durable.
+local DataStoreService = game:GetService("DataStoreService")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
+local Economy = require(script.Parent:WaitForChild("Economy"))
+
+local Profiles = {}
+local sessions = {}
+local loading = {}
+local shuttingDown = false
+local persistent = not RunService:IsStudio()
+local leaseSeconds = math.max(90, Config.ProfileLeaseSeconds or 180)
+local store
+local storeError
+
+if persistent then
+	local ok, result = pcall(function()
+		return DataStoreService:GetDataStore(Config.DataStoreName or "BrumavaleProfiles_v1")
+	end)
+	if ok then
+		store = result
+	else
+		storeError = "O armazenamento de dados não está disponível. Tente entrar novamente."
+		warn("[Brumavale] DataStore initialization failed; no player data will be overwritten.")
+	end
+end
+
+local function copy(value)
+	if type(value) ~= "table" then
+		return value
+	end
+	local result = {}
+	for key, item in pairs(value) do
+		result[key] = copy(item)
+	end
+	return result
+end
+
+local function validInteger(value, maximum)
+	return type(value) == "number" and value == value and value > 0
+		and value <= maximum and value % 1 == 0
+end
+
+local function escrowCopy(value)
+	local result = {}
+	if type(value) ~= "table" then
+		return result
+	end
+	local count = 0
+	for id, listing in pairs(value) do
+		if type(id) == "string" and #id <= 100 and type(listing) == "table"
+			and type(listing.item) == "string" and Config.Items[listing.item]
+			and validInteger(listing.count, 99) then
+			count = count + 1
+			if count > 100 then
+				break
+			end
+			result[id] = { item = listing.item, count = listing.count }
+		end
+	end
+	return result
+end
+
+local function payload(profile)
+	-- Whitelist persisted fields through the pure economy module. Never save
+	-- Instances, player objects, client payloads or the live mutable table.
+	local safe = Economy.Sanitize(copy(profile))
+	safe.marketEscrow = escrowCopy(profile.marketEscrow)
+	return safe
+end
+
+local function storedProfile(record)
+	if record == nil then
+		local fresh = Economy.NewProfile()
+		fresh.marketEscrow = {}
+		return fresh
+	end
+	if type(record) ~= "table" or record.schema ~= 1 or type(record.data) ~= "table"
+		or type(record.data.inventory) ~= "table" or type(record.data.silver) ~= "number"
+		or type(record.data.xp) ~= "number" then
+		return nil, "Os dados salvos precisam de revisão; nenhuma alteração foi gravada."
+	end
+	local profile = Economy.Sanitize(copy(record.data))
+	-- Unsold listings belong to one server session. Recover their reserved
+	-- inventory on the next session, even when the backpack is now over capacity.
+	for _, listing in pairs(escrowCopy(record.data.marketEscrow)) do
+		profile.inventory[listing.item] = (profile.inventory[listing.item] or 0) + listing.count
+	end
+	profile.marketEscrow = {}
+	return profile
+end
+
+local function active(session)
+	if not session or not session.active or session.closing then
+		return false
+	end
+	if session.persistent and os.time() >= session.expires then
+		session.active = false
+		return false
+	end
+	return true
+end
+
+function Profiles.Get(player)
+	local session = sessions[player]
+	if active(session) then
+		return session.profile
+	end
+	return nil
+end
+
+function Profiles.IsPersistent(player)
+	local session = sessions[player]
+	return session ~= nil and session.persistent and active(session)
+end
+
+function Profiles.Load(player)
+	if shuttingDown then
+		return nil, "O servidor está encerrando. Entre novamente em instantes."
+	end
+	if sessions[player] or loading[player] then
+		return Profiles.Get(player), "Este perfil já está sendo carregado."
+	end
+	if not persistent then
+		local profile = Economy.NewProfile()
+		profile.marketEscrow = {}
+		sessions[player] = { profile = profile, persistent = false, active = true }
+		return profile
+	end
+	if not store then
+		return nil, storeError
+	end
+	loading[player] = true
+	local owner = game.JobId .. ":" .. HttpService:GenerateGUID(false)
+	local key = "player:" .. tostring(player.UserId)
+	local result
+	local failure = "Não foi possível carregar seu progresso. Tente entrar novamente."
+	for attempt = 1, 3 do
+		local denied
+		local ok, response = pcall(function()
+			return store:UpdateAsync(key, function(current)
+				local now = os.time()
+				if type(current) == "table" and type(current.lease) == "table"
+					and current.lease.owner ~= owner and type(current.lease.expires) == "number"
+					and current.lease.expires > now then
+					denied = "Seu perfil ainda está aberto em outro servidor. Aguarde alguns minutos."
+					return nil
+				end
+				local profile, message = storedProfile(current)
+				if not profile then
+					denied = message
+					return nil
+				end
+				return {
+					schema = 1,
+					data = payload(profile),
+					lease = { owner = owner, expires = now + leaseSeconds },
+					updatedAt = now,
+				}
+			end)
+		end)
+		if ok and type(response) == "table" and type(response.lease) == "table"
+			and response.lease.owner == owner then
+			result = response
+			break
+		end
+		if denied then
+			failure = denied
+			break
+		end
+		if attempt < 3 then
+			task.wait(attempt)
+		end
+	end
+	loading[player] = nil
+	if not result then
+		warn("[Brumavale] Profile load refused for user " .. tostring(player.UserId) .. "; no fallback write.")
+		return nil, failure
+	end
+	local profile = Economy.Sanitize(result.data)
+	profile.marketEscrow = {}
+	sessions[player] = {
+		profile = profile, persistent = true, active = true, saving = false,
+		owner = owner, key = key, expires = result.lease.expires,
+	}
+	if shuttingDown or player.Parent == nil then
+		Profiles.Remove(player)
+		return nil, "Conexão encerrada durante o carregamento."
+	end
+	return profile
+end
+
+function Profiles.Save(player, release)
+	local session = sessions[player]
+	if not session then
+		return false, "Perfil não carregado."
+	end
+	if release then
+		session.closing = true
+	end
+	-- Serialize writes per profile. A release waits for an in-flight autosave
+	-- and then takes a fresh snapshot, including the returned market escrow.
+	while session.saving do
+		task.wait(0.05)
+	end
+	if not session.active then
+		return false, "A sessão de dados foi interrompida. Entre novamente."
+	end
+	if not session.persistent then
+		if release then
+			session.active = false
+		end
+		return true
+	end
+	if os.time() >= session.expires then
+		session.active = false
+		return false, "A sessão de dados expirou. Entre novamente para proteger seu progresso."
+	end
+	session.saving = true
+	local snapshot = payload(session.profile)
+	local writeId = HttpService:GenerateGUID(false)
+	local committed
+	local failure = "Falha ao salvar o progresso. Reconecte para proteger seus dados."
+	for attempt = 1, 3 do
+		local denied = false
+		local ok, result = pcall(function()
+			return store:UpdateAsync(session.key, function(current)
+				local now = os.time()
+				if type(current) ~= "table" or type(current.lease) ~= "table"
+					or current.lease.owner ~= session.owner
+					or type(current.lease.expires) ~= "number" or current.lease.expires <= now then
+					denied = true
+					return nil
+				end
+				local nextRecord = { schema = 1, data = snapshot, updatedAt = now, writeId = writeId }
+				if not release then
+					nextRecord.lease = { owner = session.owner, expires = now + leaseSeconds }
+				end
+				return nextRecord
+			end)
+		end)
+		if ok and not denied and type(result) == "table" and result.writeId == writeId
+			and (release or (type(result.lease) == "table" and result.lease.owner == session.owner)) then
+			committed = result
+			break
+		end
+		if denied then
+			failure = "Seu perfil foi aberto em outra sessão ou a sessão expirou. Reconecte."
+			break
+		end
+		if attempt < 3 then
+			task.wait(attempt)
+		end
+	end
+	session.saving = false
+	if not committed then
+		-- Never continue with mutable data after uncertain ownership/write state.
+		session.active = false
+		warn("[Brumavale] Profile save failed for user " .. tostring(player.UserId) .. "; session frozen.")
+		return false, failure
+	end
+	if release then
+		session.active = false
+	else
+		session.expires = committed.lease.expires
+	end
+	return true
+end
+
+function Profiles.Remove(player)
+	local session = sessions[player]
+	if not session then
+		return true
+	end
+	if session.removing then
+		while sessions[player] == session do
+			task.wait(0.05)
+		end
+		return true
+	end
+	session.removing = true
+	local ok, message = Profiles.Save(player, true)
+	sessions[player] = nil
+	return ok, message
+end
+
+function Profiles.Shutdown()
+	shuttingDown = true
+	local pending = 0
+	for player in pairs(sessions) do
+		pending = pending + 1
+		task.spawn(function()
+			Profiles.Remove(player)
+			pending = pending - 1
+		end)
+	end
+	local deadline = os.clock() + 25
+	while (pending > 0 or next(loading) ~= nil) and os.clock() < deadline do
+		task.wait(0.1)
+	end
+end
+
+return Profiles
+]=]
+
+Sources.World = [=[
+-- Brumavale: a deterministic, self-contained world built entirely from primitives.
+-- No uploaded models, HTTP access or asset permissions are required.
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
+
+local World = {}
+local VERSION = 1
+local C = {
+    stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
+    wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
+    plaster = Color3.fromRGB(221, 207, 170), roof = Color3.fromRGB(43, 89, 100),
+    gold = Color3.fromRGB(228, 181, 82), teal = Color3.fromRGB(85, 216, 190),
+    ink = Color3.fromRGB(23, 36, 47), cream = Color3.fromRGB(246, 236, 202),
+    grass = Color3.fromRGB(92, 139, 82), leaf = Color3.fromRGB(55, 113, 82),
+}
+
+local function rgb(t, fallback)
+    if type(t) ~= "table" then return fallback end
+    return Color3.fromRGB(t[1] or t.r or 120, t[2] or t.g or 120, t[3] or t.b or 120)
+end
+
+local function vector(t)
+    return Vector3.new(t[1] or t.x or 0, t[2] or t.y or 0, t[3] or t.z or 0)
+end
+
+local function part(parent, name, size, pos, color, material, shape)
+    local p = Instance.new("Part")
+    p.Name = name
+    p.Size = size
+    p.CFrame = typeof(pos) == "CFrame" and pos or CFrame.new(pos)
+    p.Color = color or C.stone
+    p.Material = material or Enum.Material.SmoothPlastic
+    p.Anchored = true
+    p.TopSurface = Enum.SurfaceType.Smooth
+    p.BottomSurface = Enum.SurfaceType.Smooth
+    if shape then p.Shape = shape end
+    p.Parent = parent
+    return p
+end
+
+local function noCollision(p)
+    p.CanCollide = false
+    return p
+end
+
+local function folder(parent, name)
+    local f = Instance.new("Folder")
+    f.Name = name
+    f.Parent = parent
+    return f
+end
+
+local function model(parent, name)
+    local m = Instance.new("Model")
+    m.Name = name
+    m.Parent = parent
+    return m
+end
+
+local function text(parent, name, content, color, size, position)
+    local label = Instance.new("TextLabel")
+    label.Name = name
+    label.BackgroundTransparency = 1
+    label.Size = size or UDim2.fromScale(1, 1)
+    label.Position = position or UDim2.fromScale(0, 0)
+    label.Font = Enum.Font.GothamBold
+    label.Text = content
+    label.TextColor3 = color or C.cream
+    label.TextSize = 14
+    label.TextStrokeColor3 = C.ink
+    label.TextStrokeTransparency = 0.25
+    label.Parent = parent
+    return label
+end
+
+local function billboard(adornee, title, subtitle, color, offset)
+    local b = Instance.new("BillboardGui")
+    b.Name = "WorldLabel"
+    b.Adornee = adornee
+    b.Size = UDim2.fromOffset(220, 60)
+    b.StudsOffsetWorldSpace = Vector3.new(0, offset or 5, 0)
+    b.MaxDistance = 110
+    b.AlwaysOnTop = false
+    b.Parent = adornee
+    text(b, "Title", title, color, UDim2.fromScale(1, 0.55))
+    local sub = text(b, "Subtitle", subtitle or "", C.cream, UDim2.fromScale(1, 0.45), UDim2.fromScale(0, 0.55))
+    sub.TextSize = 11
+    return b
+end
+
+local function prompt(adornee, name, action, object, hold)
+    local p = Instance.new("ProximityPrompt")
+    p.Name = name
+    p.ActionText = action
+    p.ObjectText = object
+    p.KeyboardKeyCode = Enum.KeyCode.E
+    p.GamepadKeyCode = Enum.KeyCode.ButtonX
+    p.MaxActivationDistance = 12
+    p.RequiresLineOfSight = false
+    p.HoldDuration = hold or 0
+    p.Parent = adornee
+    return p
+end
+
+local function lantern(parent, pos)
+    local pole = part(parent, "LanternPost", Vector3.new(0.6, 8, 0.6), pos + Vector3.new(0, 4, 0), C.wood, Enum.Material.Wood)
+    local lamp = noCollision(part(parent, "Lantern", Vector3.new(1.3, 1.8, 1.3), pos + Vector3.new(0, 8, 0), C.gold, Enum.Material.Neon))
+    part(parent, "LanternCap", Vector3.new(2, 0.35, 2), pos + Vector3.new(0, 9.1, 0), C.darkStone)
+    local light = Instance.new("PointLight")
+    light.Color = C.gold
+    light.Range = 16
+    light.Brightness = 0.8
+    light.Shadows = false
+    light.Parent = lamp
+    return pole
+end
+
+local function crate(parent, pos, size)
+    size = size or 3
+    local m = model(parent, "SupplyCrate")
+    part(m, "Box", Vector3.new(size, size, size), pos + Vector3.new(0, size / 2, 0), C.paleWood, Enum.Material.WoodPlanks)
+    for _, dy in ipairs({0.3, size - 0.3}) do
+        part(m, "IronBand", Vector3.new(size + 0.1, 0.35, size + 0.1), pos + Vector3.new(0, dy, 0), C.darkStone, Enum.Material.Metal)
+    end
+    return m
+end
+
+local function tree(parent, pos, rng, autumn)
+    local m = model(parent, "WildTree")
+    local height = rng:NextNumber(12, 18)
+    local trunk = part(m, "Trunk", Vector3.new(2.2, height * 0.65, 2.2), pos + Vector3.new(0, height * 0.325, 0), C.wood, Enum.Material.Wood)
+    local color = autumn and Color3.fromRGB(192, 127, 65) or C.leaf
+    for i = 1, 3 do
+        local leaf = noCollision(part(m, "Crown", Vector3.new(10 - i, 7 - i * 0.5, 10 - i), pos + Vector3.new((i - 2) * 2, height * 0.62 + i * 1.6, (i % 2) * 1.8), color, Enum.Material.Grass, Enum.PartType.Ball))
+        leaf.CFrame = leaf.CFrame * CFrame.Angles(0, i, 0)
+    end
+    m.PrimaryPart = trunk
+    return m
+end
+
+local function pine(parent, pos, rng)
+    local m = model(parent, "Pine")
+    local h = rng:NextNumber(17, 24)
+    m.PrimaryPart = part(m, "Trunk", Vector3.new(2, h * 0.65, 2), pos + Vector3.new(0, h * 0.325, 0), C.wood, Enum.Material.Wood)
+    for i = 1, 4 do
+        local width = 15 - i * 2.4
+        noCollision(part(m, "Bough", Vector3.new(width, 5, width), CFrame.new(pos + Vector3.new(0, h * 0.35 + i * 3, 0)) * CFrame.Angles(0, math.pi / 4, 0), Color3.fromRGB(39 + i * 6, 88 + i * 7, 73 + i * 4), Enum.Material.Grass))
+    end
+    return m
+end
+
+local function resource(parent, kind, pos, index, rng)
+    local def = Config.Nodes[kind]
+    assert(def, "Missing resource configuration: " .. kind)
+    local m
+    if kind == "tree" then
+        m = tree(parent, pos, rng, false)
+    else
+        m = model(parent, "Resource")
+        local color = rgb(def.color, C.stone)
+        if kind == "fiber" then
+            m.PrimaryPart = noCollision(part(m, "Stem", Vector3.new(0.7, 2.5, 0.7), pos + Vector3.new(0, 1.25, 0), color, Enum.Material.Grass))
+            for n = 1, 5 do
+                local angle = n * math.pi * 0.4
+                local stem = noCollision(part(m, "FiberLeaf", Vector3.new(0.7, 3, 0.7), CFrame.new(pos + Vector3.new(math.cos(angle) * 1.1, 1.5, math.sin(angle) * 1.1)) * CFrame.Angles(math.sin(angle) * 0.4, 0, math.cos(angle) * 0.4), color, Enum.Material.Grass))
+                noCollision(part(m, "Bloom", Vector3.new(1.2, 0.8, 1.2), stem.Position + Vector3.new(0, 1.3, 0), C.cream, Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+            end
+        elseif kind == "crystal" then
+            m.PrimaryPart = part(m, "CrystalBase", Vector3.new(4, 2, 4), pos + Vector3.new(0, 1, 0), C.darkStone, Enum.Material.Slate, Enum.PartType.Ball)
+            for n = 1, 4 do
+                local angle = n * math.pi / 2
+                noCollision(part(m, "CrystalShard", Vector3.new(1.1, 3 + n * 0.5, 1.1), CFrame.new(pos + Vector3.new(math.cos(angle), 2.2 + n * 0.2, math.sin(angle))) * CFrame.Angles(math.sin(angle) * 0.25, math.pi / 4, math.cos(angle) * 0.25), color, Enum.Material.Neon))
+            end
+        else
+            m.PrimaryPart = part(m, "Boulder", Vector3.new(5.5, 4, 5), CFrame.new(pos + Vector3.new(0, 1.7, 0)) * CFrame.Angles(0.2, rng:NextNumber(0, 6), 0.2), kind == "ore" and C.darkStone or color, Enum.Material.Slate)
+            if kind == "ore" then
+                for n = 1, 5 do
+                    noCollision(part(m, "OreVein", Vector3.new(1, 0.6, 1), pos + Vector3.new(rng:NextNumber(-1.9, 1.9), 3.8, rng:NextNumber(-1.8, 1.8)), color, Enum.Material.Metal))
+                end
+            end
+        end
+    end
+    m.Name = kind .. "_" .. tostring(index)
+    m:SetAttribute("NodeType", kind)
+    m:SetAttribute("Available", true)
+    m:SetAttribute("SpawnPosition", m.PrimaryPart.Position)
+    prompt(m.PrimaryPart, "GatherPrompt", "Coletar", def.name, 0.8)
+    return m
+end
+
+local function enemyLabel(m, def)
+    local b = Instance.new("BillboardGui")
+    b.Name = "EnemyLabel"
+    b.Size = UDim2.fromOffset(150, 52)
+    b.Adornee = m.PrimaryPart
+    b.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
+    b.MaxDistance = 90
+    b.AlwaysOnTop = true
+    b.Parent = m.PrimaryPart
+    local name = text(b, "NameLabel", def.name, C.cream, UDim2.fromScale(1, 0.5))
+    name.TextSize = 12
+    local bar = Instance.new("Frame")
+    bar.Name = "Bar"
+    bar.BorderSizePixel = 0
+    bar.BackgroundColor3 = C.ink
+    bar.Size = UDim2.fromScale(0.84, 0.22)
+    bar.Position = UDim2.fromScale(0.08, 0.52)
+    bar.Parent = b
+    local fill = Instance.new("Frame")
+    fill.Name = "Fill"
+    fill.BorderSizePixel = 0
+    fill.BackgroundColor3 = Color3.fromRGB(214, 95, 88)
+    fill.Size = UDim2.fromScale(1, 1)
+    fill.Parent = bar
+    local health = text(b, "HealthLabel", tostring(def.health) .. " / " .. tostring(def.health), C.cream, UDim2.fromScale(1, 0.24), UDim2.fromScale(0, 0.76))
+    health.TextSize = 10
+end
+
+local function enemy(parent, kind, pos, index)
+    local def = Config.Enemies[kind]
+    assert(def, "Missing enemy configuration: " .. kind)
+    local m = model(parent, kind .. "_" .. tostring(index))
+    if kind == "slime" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(4.5, 3.1, 4.5), pos + Vector3.new(0, 1.7, 0), Color3.fromRGB(114, 191, 135), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+        for _, x in ipairs({-0.8, 0.8}) do
+            noCollision(part(m, "Eye", Vector3.new(0.65, 0.7, 0.3), pos + Vector3.new(x, 2.1, -2), C.ink, Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+        end
+    elseif kind == "wolf" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 2.4, 5), pos + Vector3.new(0, 2.7, 0), Color3.fromRGB(132, 142, 148), Enum.Material.Slate))
+        noCollision(part(m, "Head", Vector3.new(2.5, 2.3, 2.4), pos + Vector3.new(0, 3.5, -2.8), Color3.fromRGB(161, 169, 173)))
+        noCollision(part(m, "Muzzle", Vector3.new(1.6, 1, 1.3), pos + Vector3.new(0, 3.1, -4.2), C.darkStone))
+        for _, x in ipairs({-1, 1}) do
+            for _, z in ipairs({-1.6, 1.6}) do
+                noCollision(part(m, "Leg", Vector3.new(0.65, 1.9, 0.65), pos + Vector3.new(x, 1, z), C.darkStone))
+            end
+            noCollision(part(m, "Ear", Vector3.new(0.65, 1.3, 0.65), pos + Vector3.new(x * 0.8, 4.9, -2.8), C.darkStone))
+            noCollision(part(m, "Eye", Vector3.new(0.4, 0.4, 0.2), pos + Vector3.new(x * 0.7, 3.8, -4.05), C.gold, Enum.Material.Neon))
+        end
+        noCollision(part(m, "Tail", Vector3.new(0.9, 0.9, 2.5), CFrame.new(pos + Vector3.new(0, 3, 3.1)) * CFrame.Angles(-0.25, 0, 0), C.darkStone))
+    elseif kind == "guardian" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(5.5, 6, 3.5), pos + Vector3.new(0, 5.7, 0), C.darkStone, Enum.Material.Slate))
+        noCollision(part(m, "Head", Vector3.new(3.2, 3, 3), pos + Vector3.new(0, 10, 0), C.stone, Enum.Material.Slate))
+        noCollision(part(m, "Rune", Vector3.new(1.6, 2.2, 0.25), pos + Vector3.new(0, 6, -1.9), Color3.fromRGB(157, 124, 235), Enum.Material.Neon))
+        for _, x in ipairs({-1, 1}) do
+            noCollision(part(m, "Arm", Vector3.new(2, 5.5, 2), CFrame.new(pos + Vector3.new(x * 4, 5.2, 0)) * CFrame.Angles(0, 0, x * 0.15), C.stone, Enum.Material.Slate))
+            noCollision(part(m, "Leg", Vector3.new(2.2, 3, 2.4), pos + Vector3.new(x * 1.6, 1.5, 0), C.stone, Enum.Material.Slate))
+            noCollision(part(m, "Eye", Vector3.new(0.75, 0.45, 0.2), pos + Vector3.new(x * 0.8, 10.2, -1.6), C.teal, Enum.Material.Neon))
+        end
+    else
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), Color3.fromRGB(105, 62, 68)))
+        noCollision(part(m, "Head", Vector3.new(1.8, 1.8, 1.8), pos + Vector3.new(0, 6.3, 0), Color3.fromRGB(196, 156, 118)))
+        noCollision(part(m, "Hood", Vector3.new(2, 0.7, 2), pos + Vector3.new(0, 7.35, 0), C.darkStone))
+        noCollision(part(m, "Mask", Vector3.new(1.9, 0.7, 0.3), pos + Vector3.new(0, 5.95, -0.95), C.darkStone))
+        for _, x in ipairs({-1, 1}) do
+            noCollision(part(m, "Arm", Vector3.new(0.9, 2.8, 1), pos + Vector3.new(x * 1.9, 3.8, 0), C.wood))
+            noCollision(part(m, "Leg", Vector3.new(1, 2.4, 1.2), pos + Vector3.new(x * 0.75, 1.2, 0), C.darkStone))
+        end
+        noCollision(part(m, "Blade", Vector3.new(0.35, 4, 0.65), pos + Vector3.new(2.4, 4, -0.5), C.stone, Enum.Material.Metal))
+    end
+    m:SetAttribute("EnemyType", kind)
+    m:SetAttribute("Health", def.health)
+    m:SetAttribute("MaxHealth", def.health)
+    m:SetAttribute("Alive", true)
+    m:SetAttribute("SpawnPosition", m.PrimaryPart.Position)
+    enemyLabel(m, def)
+    return m
+end
+
+local function npc(parent, pos, coat, name)
+    local m = model(parent, name)
+    m.PrimaryPart = noCollision(part(m, "Torso", Vector3.new(2, 2.5, 1.3), pos + Vector3.new(0, 3.45, 0), coat))
+    noCollision(part(m, "Head", Vector3.new(1.5, 1.5, 1.5), pos + Vector3.new(0, 5.5, 0), Color3.fromRGB(200, 160, 118)))
+    noCollision(part(m, "Hair", Vector3.new(1.6, 0.55, 1.6), pos + Vector3.new(0, 6.35, 0), C.wood))
+    for _, x in ipairs({-1, 1}) do
+        noCollision(part(m, "Arm", Vector3.new(0.7, 2.4, 0.8), pos + Vector3.new(x * 1.4, 3.4, 0), coat))
+        noCollision(part(m, "Leg", Vector3.new(0.8, 2.2, 0.9), pos + Vector3.new(x * 0.55, 1.1, 0), C.darkStone))
+        noCollision(part(m, "Eye", Vector3.new(0.15, 0.18, 0.1), pos + Vector3.new(x * 0.3, 5.55, -0.8), C.ink))
+    end
+    return m
+end
+
+local function stall(parent, pos, stationId, title, color)
+    local m = model(parent, title)
+    m:SetAttribute("Station", stationId)
+    -- The counter is deliberately close to its prompt, with a clear approach.
+    m.PrimaryPart = part(m, "Counter", Vector3.new(13, 2.5, 3), pos + Vector3.new(0, 1.25, 0), C.paleWood, Enum.Material.WoodPlanks)
+    for _, x in ipairs({-6, 6}) do
+        part(m, "Post", Vector3.new(0.55, 8, 0.55), pos + Vector3.new(x, 4, 2.5), C.wood, Enum.Material.Wood)
+    end
+    for n = -3, 3 do
+        part(m, "Canopy", Vector3.new(2, 0.5, 8), CFrame.new(pos + Vector3.new(n * 2, 8, 1)) * CFrame.Angles(-0.12, 0, 0), n % 2 == 0 and color or C.cream, Enum.Material.Fabric)
+    end
+    billboard(m.PrimaryPart, title, "E • Interagir", color, 9)
+    prompt(m.PrimaryPart, "StationPrompt", "Abrir", title)
+    npc(m, pos + Vector3.new(0, 0, 4.5), color, "Keeper")
+    crate(m, pos + Vector3.new(-9, 0, 2), 3)
+    return m
+end
+
+local function house(parent, pos, rotation, color)
+    local m = model(parent, "TownHouse")
+    local cf = CFrame.new(pos) * CFrame.Angles(0, rotation, 0)
+    local function block(name, size, offset, tint, material)
+        return part(m, name, size, cf * CFrame.new(offset), tint, material)
+    end
+    block("Foundation", Vector3.new(23, 2, 19), Vector3.new(0, 1, 0), C.darkStone, Enum.Material.Cobblestone)
+    block("Walls", Vector3.new(21, 13, 17), Vector3.new(0, 8, 0), C.plaster)
+    for _, x in ipairs({-10, 10}) do
+        for _, z in ipairs({-8, 8}) do
+            block("Timber", Vector3.new(0.8, 13, 0.8), Vector3.new(x, 8, z), C.wood, Enum.Material.Wood)
+        end
+    end
+    block("Beam", Vector3.new(22, 0.8, 18), Vector3.new(0, 11, 0), C.wood, Enum.Material.Wood)
+    for _, x in ipairs({-1, 1}) do
+        part(m, "Roof", Vector3.new(13, 1.1, 21), cf * CFrame.new(x * 5.5, 17, 0) * CFrame.Angles(0, 0, -x * 0.45), color, Enum.Material.WoodPlanks)
+        block("Window", Vector3.new(3, 3, 0.3), Vector3.new(x * 6, 7.5, -8.6), C.gold, Enum.Material.Glass)
+    end
+    block("Door", Vector3.new(4.2, 6.5, 0.5), Vector3.new(0, 5.25, -8.8), C.wood, Enum.Material.WoodPlanks)
+    block("Chimney", Vector3.new(3, 8, 3), Vector3.new(6, 18, 5), C.darkStone, Enum.Material.Brick)
+    return m
+end
+
+local function portal(parent, pos, region, name, color, rotation)
+    local m = model(parent, "Gate_" .. region)
+    m:SetAttribute("Region", region)
+    m.PrimaryPart = noCollision(part(m, "TravelStone", Vector3.new(9, 0.5, 9), pos + Vector3.new(0, 0.25, 0), color, Enum.Material.Neon))
+    for _, x in ipairs({-6.4, 6.4}) do
+        part(m, "Pillar", Vector3.new(2.4, 11, 3), pos + Vector3.new(x, 5.5, 0), C.darkStone, Enum.Material.Slate)
+        noCollision(part(m, "Rune", Vector3.new(1, 4, 0.15), pos + Vector3.new(x, 7, -1.6), color, Enum.Material.Neon))
+    end
+    part(m, "Arch", Vector3.new(15, 2, 3.2), pos + Vector3.new(0, 11.5, 0), C.stone, Enum.Material.Slate)
+    billboard(m.PrimaryPart, name, "E • Viajar", color, 14)
+    prompt(m.PrimaryPart, "TravelPrompt", "Viajar", name, 0.4)
+    if rotation then m:PivotTo(m.PrimaryPart.CFrame * CFrame.Angles(0, rotation, 0)) end
+    return m
+end
+
+local function bridge(parent, pos, alongX)
+    local cf = CFrame.new(pos) * CFrame.Angles(0, alongX and math.pi / 2 or 0, 0)
+    part(parent, "BridgeDeck", Vector3.new(20, 1, 36), cf * CFrame.new(0, -0.5, 0), C.paleWood, Enum.Material.WoodPlanks)
+    for _, side in ipairs({-1, 1}) do
+        part(parent, "BridgeRail", Vector3.new(0.6, 0.6, 36), cf * CFrame.new(side * 10, 3.5, 0), C.wood, Enum.Material.Wood)
+        for n = -2, 2 do
+            part(parent, "BridgePost", Vector3.new(0.8, 5, 0.8), cf * CFrame.new(side * 10, 1.5, n * 8), C.wood, Enum.Material.Wood)
+        end
+    end
+end
+
+local function ruins(parent, center)
+    local m = model(parent, "AncientSanctum")
+    local p = center + Vector3.new(65, 0, -55)
+    part(m, "SanctumFloor", Vector3.new(50, 0.3, 44), p + Vector3.new(0, 0.15, 0), C.darkStone, Enum.Material.Cobblestone)
+    for _, x in ipairs({-20, 20}) do
+        for _, z in ipairs({-16, 16}) do
+            local height = z == 16 and 12 or 21
+            part(m, "ColumnBase", Vector3.new(7, 2, 7), p + Vector3.new(x, 1, z), C.stone, Enum.Material.Slate)
+            part(m, "Column", Vector3.new(4, height, 4), p + Vector3.new(x, 2 + height / 2, z), C.darkStone, Enum.Material.Slate)
+            part(m, "Capital", Vector3.new(6.5, 2, 6.5), p + Vector3.new(x, 3 + height, z), C.stone, Enum.Material.Slate)
+        end
+    end
+    part(m, "BrokenArch", Vector3.new(48, 3, 6), p + Vector3.new(0, 26, -16), C.darkStone, Enum.Material.Slate)
+    for n = 1, 4 do
+        noCollision(part(m, "Rune", Vector3.new(2, 0.25, 8), CFrame.new(p + Vector3.new((n - 2.5) * 6, 0.45, 0)) * CFrame.Angles(0, 0.3, 0), Color3.fromRGB(157, 124, 235), Enum.Material.Neon))
+    end
+    return m
+end
+
+local function regionTitle(parent, region, center)
+    local sign = part(parent, "RegionSign", Vector3.new(14, 5, 1), center + Vector3.new(17, 4.5, 0), C.wood, Enum.Material.WoodPlanks)
+    part(parent, "SignPost", Vector3.new(0.8, 7, 0.8), center + Vector3.new(17, 3.5, 0), C.darkStone)
+    local gui = Instance.new("SurfaceGui")
+    gui.Face = Enum.NormalId.Front
+    gui.CanvasSize = Vector2.new(420, 150)
+    gui.Parent = sign
+    local title = text(gui, "Name", string.upper(region.name), C.cream, UDim2.fromScale(0.96, 0.6), UDim2.fromScale(0.02, 0))
+    title.TextScaled = true
+    title.TextWrapped = true
+    local subtitle = region.safe and "SANTUÁRIO • COMÉRCIO" or ("EXPEDIÇÃO • NÍVEL " .. tostring(region.level))
+    local sub = text(gui, "Difficulty", subtitle, C.gold, UDim2.fromScale(1, 0.3), UDim2.fromScale(0, 0.65))
+    sub.TextScaled = true
+end
+
+function World.Build()
+    local previous = Workspace:FindFirstChild("BrumavaleWorld")
+    if previous then
+        assert(previous:IsA("Folder") and previous:GetAttribute("BrumavaleGenerated") == true and previous:GetAttribute("Version") == VERSION,
+            "BrumavaleWorld already exists and is not a compatible generated world; move it manually before installing.")
+        return previous
+    end
+    local root = Instance.new("Folder")
+    root.Name = "BrumavaleWorld"
+    root:SetAttribute("BrumavaleGenerated", true)
+    root:SetAttribute("Version", VERSION)
+    local ground = folder(root, "TerrainParts")
+    local decor = folder(root, "Decorations")
+    local resources = folder(root, "Resources")
+    local enemies = folder(root, "Enemies")
+    local stations = folder(root, "Stations")
+    local portals = folder(root, "Portals")
+    local rng = Random.new(17429)
+    local regionsById = {}
+    for _, region in ipairs(Config.Regions) do regionsById[region.id] = region end
+
+    -- Water and cliff skirts unify the region silhouettes without touching Terrain.
+    -- The lagoon sits just above Roblox's default Baseplate, while all playable
+    -- surfaces are lifted one stud below. A fresh Baseplate template therefore
+    -- looks intentional without deleting or editing any user-owned object.
+    local water = noCollision(part(ground, "Lagoon", Vector3.new(820, 1, 820), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
+    water.Transparency = 0.25
+    water.CastShadow = false
+    water.CanTouch = false
+    for _, region in ipairs(Config.Regions) do
+        local center = vector(region.center)
+        local size = region.size or 240
+        local color = rgb(region.color, C.grass)
+        local land = part(ground, "Island_" .. region.id, Vector3.new(size, 8, size), center + Vector3.new(0, -3.95, 0), color, region.id == "quarry" and Enum.Material.Slate or Enum.Material.Grass)
+        land:SetAttribute("Region", region.id)
+        part(ground, "Cliff_" .. region.id, Vector3.new(size - 6, 18, size - 6), center + Vector3.new(0, -15, 0), C.darkStone, Enum.Material.Slate)
+        -- The cardinal roads align with all inter-island bridges and remain clear.
+        part(ground, "RoadNS", Vector3.new(14, 0.12, size), center + Vector3.new(0, 0.06, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
+        part(ground, "RoadEW", Vector3.new(size, 0.1, 14), center + Vector3.new(0, 0.05, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
+        regionTitle(decor, region, center)
+        if not region.safe then
+            portal(portals, center + Vector3.new(-24, 0, 8), "town", "Voltar a Brumavale", C.teal)
+        end
+    end
+    for _, p in ipairs({Vector3.new(0, 0, 135), Vector3.new(0, 0, -135)}) do bridge(ground, p, false) end
+    for _, p in ipairs({Vector3.new(135, 0, 0), Vector3.new(-135, 0, 0)}) do bridge(ground, p, true) end
+
+    -- Town square: readable approaches, service counters, fountain and waystones.
+    part(ground, "TownSquare", Vector3.new(116, 0.16, 116), Vector3.new(0, 0.08, 10), Color3.fromRGB(159, 155, 130), Enum.Material.Cobblestone)
+    local spawn = Instance.new("SpawnLocation")
+    spawn.Name = "TownSpawn"
+    spawn.Size = Vector3.new(12, 0.4, 12)
+    spawn.Position = Vector3.new(0, 0.3, 20)
+    spawn.Anchored = true
+    spawn.Neutral = true
+    spawn.Duration = 3
+    spawn.Transparency = 1
+    spawn.CanCollide = false
+    spawn.Parent = root
+    local fountain = model(decor, "Fountain")
+    part(fountain, "Basin", Vector3.new(15, 2, 15), Vector3.new(0, 1, -27), C.darkStone, Enum.Material.Slate)
+    noCollision(part(fountain, "Water", Vector3.new(12, 0.4, 12), Vector3.new(0, 2, -27), C.teal, Enum.Material.Glass))
+    part(fountain, "Pedestal", Vector3.new(3, 6, 3), Vector3.new(0, 4, -27), C.stone, Enum.Material.Slate)
+    noCollision(part(fountain, "Crest", Vector3.new(3.5, 3.5, 3.5), CFrame.new(0, 8, -27) * CFrame.Angles(0, 0, math.pi / 4), C.gold, Enum.Material.Metal))
+    stall(stations, Vector3.new(-35, 0, 0), "shop", "EMPÓRIO DA BRUMA", Color3.fromRGB(91, 158, 150))
+    local forge = stall(stations, Vector3.new(35, 0, 0), "craft", "FORJA & OFICINA", Color3.fromRGB(204, 129, 82))
+    part(forge, "AnvilBase", Vector3.new(3, 2, 3), Vector3.new(43, 1, -4), C.wood, Enum.Material.Wood)
+    part(forge, "Anvil", Vector3.new(5, 1.2, 2.5), Vector3.new(43, 2.6, -4), C.darkStone, Enum.Material.Metal)
+    local coal = noCollision(part(forge, "Coals", Vector3.new(3, 0.5, 3), Vector3.new(43, 0.8, 4), Color3.fromRGB(245, 142, 65), Enum.Material.Neon))
+    local glow = Instance.new("PointLight")
+    glow.Color = coal.Color
+    glow.Range = 12
+    glow.Brightness = 0.7
+    glow.Parent = coal
+    stall(stations, Vector3.new(-35, 0, 45), "market", "MERCADO DOS VIAJANTES", C.gold)
+    stall(stations, Vector3.new(35, 0, 45), "quest", "MURAL DE CONTRATOS", Color3.fromRGB(141, 128, 188))
+    for _, location in ipairs({{-70, -53, 0}, {65, -55, 0}, {-72, 65, math.pi}, {70, 69, math.pi}}) do
+        house(decor, Vector3.new(location[1], 0, location[2]), location[3], C.roof)
+    end
+    for _, location in ipairs({{-18, 15}, {18, 15}, {-56, 24}, {56, 24}, {-20, -50}, {20, -50}}) do
+        lantern(decor, Vector3.new(location[1], 0, location[2]))
+    end
+    local townGates = {
+        {"meadow", Vector3.new(0, 0, 88)}, {"forest", Vector3.new(88, 0, 0)},
+        {"quarry", Vector3.new(-88, 0, 0)}, {"ruins", Vector3.new(0, 0, -88)},
+    }
+    for _, entry in ipairs(townGates) do
+        local region = assert(regionsById[entry[1]], "Missing region " .. entry[1])
+        portal(portals, entry[2], region.id, region.name, rgb(region.color, C.teal), entry[2].X ~= 0 and math.pi / 2 or nil)
+    end
+
+    -- Resource placements are curated around the roads, never on arrival areas.
+    local resourceIndex = 0
+    local function node(regionId, kind, x, z)
+        resourceIndex = resourceIndex + 1
+        return resource(resources, kind, vector(regionsById[regionId].center) + Vector3.new(x, 0, z), resourceIndex, rng)
+    end
+    local layouts = {
+        meadow = {{"tree", -40, 45}, {"tree", 45, 40}, {"tree", -75, -20}, {"fiber", 25, 46}, {"fiber", 35, 55}, {"fiber", -35, 65}, {"fiber", 65, -35}, {"rock", -50, -50}, {"rock", 55, -55}},
+        forest = {{"tree", -45, 45}, {"tree", 40, 40}, {"tree", 65, -35}, {"tree", -55, -50}, {"tree", 85, 60}, {"tree", -80, 75}, {"fiber", 30, -40}, {"fiber", -35, 50}, {"rock", -70, -70}},
+        quarry = {{"rock", -40, 45}, {"rock", 40, 40}, {"rock", 68, -35}, {"ore", -55, -50}, {"ore", 65, 65}, {"ore", -80, 70}, {"ore", 30, -45}, {"ore", -35, 65}, {"crystal", -85, -80}},
+        ruins = {{"crystal", -45, 40}, {"crystal", 40, 50}, {"crystal", -65, -40}, {"ore", -85, 65}, {"rock", 75, 75}, {"fiber", 25, -40}},
+    }
+    for _, region in ipairs(Config.Regions) do
+        for _, row in ipairs(layouts[region.id] or {}) do node(region.id, row[1], row[2], row[3]) end
+    end
+    -- Low-density border vegetation creates silhouettes while limiting draw calls.
+    for _, region in ipairs(Config.Regions) do
+        local center = vector(region.center)
+        if region.id == "town" or region.id == "meadow" or region.id == "forest" then
+            for n = 1, 10 do
+                local angle = n * math.pi * 0.2 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 104, 0, math.sin(angle) * 104)
+                if region.id == "forest" then pine(decor, pos, rng) else tree(decor, pos, rng, region.id == "town") end
+            end
+        else
+            for n = 1, 10 do
+                local angle = n * math.pi * 0.2 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 106, 0, math.sin(angle) * 106)
+                part(decor, "CliffBoulder", Vector3.new(rng:NextNumber(9, 16), rng:NextNumber(7, 16), rng:NextNumber(9, 16)), CFrame.new(pos + Vector3.new(0, 3, 0)) * CFrame.Angles(0.1, angle, 0.15), C.darkStone, Enum.Material.Slate)
+            end
+        end
+    end
+    local quarryCenter = vector(regionsById.quarry.center)
+    local mining = model(decor, "MiningCamp")
+    for _, x in ipairs({-5, 5}) do
+        part(mining, "PitSupport", Vector3.new(1.6, 12, 1.6), quarryCenter + Vector3.new(65 + x, 6, -65), C.wood, Enum.Material.Wood)
+    end
+    part(mining, "PitBeam", Vector3.new(14, 1.8, 2), quarryCenter + Vector3.new(65, 12, -65), C.wood, Enum.Material.Wood)
+    crate(mining, quarryCenter + Vector3.new(80, 0, -65), 4)
+    crate(mining, quarryCenter + Vector3.new(84, 0, -59), 3)
+    ruins(decor, vector(regionsById.ruins.center))
+    local forestCenter = vector(regionsById.forest.center)
+    for n = 1, 4 do
+        noCollision(part(decor, "ForestMushroom", Vector3.new(2.6, 1.3, 2.6), forestCenter + Vector3.new(-65 + n * 4, 1.5, 35), Color3.fromRGB(155, 110, 181), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+    end
+
+    local enemyIndex = 0
+    local spawns = {
+        meadow = {{"slime", -68, 40}, {"slime", 65, 50}, {"slime", 45, -70}, {"slime", -65, -65}},
+        forest = {{"wolf", -70, 42}, {"wolf", 72, 40}, {"wolf", 45, -75}, {"bandit", -65, -70}},
+        quarry = {{"bandit", -70, 40}, {"bandit", 75, 40}, {"bandit", 45, -72}},
+        ruins = {{"bandit", -70, 40}, {"bandit", -60, -65}, {"guardian", 65, -55}},
+    }
+    for _, region in ipairs(Config.Regions) do
+        for _, row in ipairs(spawns[region.id] or {}) do
+            enemyIndex = enemyIndex + 1
+            local m = enemy(enemies, row[1], vector(region.center) + Vector3.new(row[2], 0, row[3]), enemyIndex)
+            m:SetAttribute("Region", region.id)
+        end
+    end
+
+    -- Keep the world above the default Baseplate, preserving every pre-existing
+    -- place object while avoiding z-fighting and grey gaps between islands.
+    for _, descendant in ipairs(root:GetDescendants()) do
+        if descendant:IsA("BasePart") then descendant.CFrame = descendant.CFrame + Vector3.new(0, 1, 0) end
+    end
+    for _, collection in ipairs({resources, enemies}) do
+        for _, object in ipairs(collection:GetChildren()) do
+            if object:IsA("Model") and object.PrimaryPart then object:SetAttribute("SpawnPosition", object.PrimaryPart.Position) end
+        end
+    end
+
+    -- Only publish the finished hierarchy, keeping an interrupted build isolated.
+    root.Parent = Workspace
+    return root
+end
+
+return World
+]=]
+
+Sources.Main = [=[
+-- Brumavale runtime. All inventory, damage and currency decisions are server-owned.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local HttpService = game:GetService("HttpService")
+
+local shared = ReplicatedStorage:WaitForChild("Brumavale")
+local Config = require(shared:WaitForChild("Config"))
+local Economy = require(script.Parent:WaitForChild("Economy"))
+local Profiles = require(script.Parent:WaitForChild("Profiles"))
+local world = require(script.Parent:WaitForChild("World")).Build()
+local actionRemote = shared:WaitForChild("Action")
+local stateRemote = shared:WaitForChild("State")
+local getState = shared:WaitForChild("GetState")
+local sessions, listings, mobs = {}, {}, {}
+local closing = false
+
+local function integer(value, maximum)
+	return type(value) == "number" and value == value and value >= 1
+		and value <= maximum and value % 1 == 0
+end
+
+local function body(player)
+	local character = player.Character
+	if not character then return nil end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if root and humanoid and humanoid.Health > 0 then return root, humanoid end
+	return nil
+end
+
+local function regionAt(position)
+	for _, region in ipairs(Config.Regions) do
+		local center = Vector3.new(table.unpack(region.center))
+		if math.abs(position.X - center.X) <= region.size / 2
+			and math.abs(position.Z - center.Z) <= region.size / 2 then
+			return region
+		end
+	end
+	return nil
+end
+
+local function notify(player, message)
+	if player.Parent == Players then stateRemote:FireClient(player, nil, message) end
+end
+
+local function marketSnapshot()
+	local result = {}
+	for _, listing in pairs(listings) do
+		table.insert(result, {
+			id=listing.id, item=listing.item, count=listing.count, price=listing.price,
+			sellerId=listing.sellerId, sellerName=listing.sellerName,
+		})
+	end
+	table.sort(result, function(a, b) return a.id < b.id end)
+	return {listings=result}
+end
+
+local function snapshot(player)
+	local profile = Profiles.Get(player)
+	local session = sessions[player]
+	if not profile or not session or not session.ready then return nil end
+	local stats = Economy.Stats(profile)
+	return {
+		silver=profile.silver, xp=profile.xp, level=stats.level,
+		capacity=Config.Capacity, weight=Economy.Weight(profile),
+		inventory=profile.inventory, equipment=profile.equipment, stats=profile.stats,
+		quest=Economy.Quest(profile), market=marketSnapshot(),
+		persistent=Profiles.IsPersistent(player), region=session.region or "town",
+		damage=stats.damage, defense=stats.defense, maxHealth=stats.maxHealth,
+	}
+end
+
+local function update(player, message)
+	local data = snapshot(player)
+	if not data or player.Parent ~= Players then return end
+	local stats = player:FindFirstChild("leaderstats")
+	if stats then
+		local silver, level = stats:FindFirstChild("Prata"), stats:FindFirstChild("Nível")
+		if silver and silver:IsA("IntValue") then silver.Value = data.silver end
+		if level and level:IsA("IntValue") then level.Value = data.level end
+	end
+	local _, humanoid = body(player)
+	if humanoid then humanoid.MaxHealth = data.maxHealth end
+	stateRemote:FireClient(player, data, message)
+end
+
+local function updateMarket()
+	for player, session in pairs(sessions) do
+		if session.ready then update(player) end
+	end
+end
+
+local function nearStation(player, stationType)
+	local root = body(player)
+	if not root then return false end
+	for _, station in ipairs(world.Stations:GetChildren()) do
+		if station:GetAttribute("Station") == stationType and station.PrimaryPart
+			and (root.Position - station.PrimaryPart.Position).Magnitude <= 18 then
+			return true
+		end
+	end
+	return false
+end
+
+local function cooldown(player, key, seconds)
+	local session = sessions[player]
+	local now = os.clock()
+	if not session or now < (session.cooldowns[key] or 0) then return false end
+	session.cooldowns[key] = now + seconds
+	return true
+end
+
+local function allowRequest(player)
+	local session = sessions[player]
+	if not session or not session.ready or closing then return false end
+	local now = os.clock()
+	session.tokens = math.min(20, session.tokens + (now - session.lastToken) * 10)
+	session.lastToken = now
+	if session.tokens < 1 then return false end
+	session.tokens -= 1
+	return true
+end
+
+local function effect(position, color, radius)
+	local part = Instance.new("Part")
+	part.Name = "BrumavaleEffect"
+	part.Shape = Enum.PartType.Ball
+	part.Size = Vector3.new(1, 1, 1)
+	part.Position = position
+	part.Anchored, part.CanCollide, part.CanTouch, part.CanQuery = true, false, false, false
+	part.Material, part.Color, part.Transparency = Enum.Material.Neon, color, 0.5
+	part.Parent = world
+	TweenService:Create(part, TweenInfo.new(0.32), {
+		Size=Vector3.new(radius, radius, radius), Transparency=1,
+	}):Play()
+	Debris:AddItem(part, 0.4)
+end
+
+local function equipmentVisual(player)
+	local profile, character = Profiles.Get(player), player.Character
+	if not profile or not character then return end
+	local previous = character:FindFirstChild("BrumavaleEquipment")
+	if previous then previous:Destroy() end
+	local folder = Instance.new("Folder")
+	folder.Name, folder.Parent = "BrumavaleEquipment", character
+	local function welded(name, size, limb, offset, color, material)
+		local part = Instance.new("Part")
+		part.Name, part.Size, part.Color = name, size, color
+		part.Material = material or Enum.Material.Metal
+		part.Massless, part.CanCollide, part.CanTouch, part.CanQuery = true, false, false, false
+		part.CFrame = limb.CFrame * offset
+		part.Parent = folder
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0, weld.Part1, weld.Parent = limb, part, part
+	end
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	local weapon = Config.Items[profile.equipment.weapon]
+	if hand and weapon then
+		local tint = weapon.tier == 3 and Color3.fromRGB(98, 232, 225) or Color3.fromRGB(190, 204, 212)
+		welded("Empunhadura", Vector3.new(0.22, 0.9, 0.22), hand, CFrame.new(0, -0.6, 0), Color3.fromRGB(92, 57, 38))
+		welded("Guarda", Vector3.new(1.1, 0.16, 0.3), hand, CFrame.new(0, -1, 0), Color3.fromRGB(201, 169, 93))
+		welded("Lâmina", Vector3.new(0.35, 2.5, 0.13), hand, CFrame.new(0, -2.2, 0), tint)
+	end
+	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	local armor = Config.Items[profile.equipment.armor]
+	if torso and armor then
+		welded("Peitoral", Vector3.new(1.7, 1.35, 0.15), torso, CFrame.new(0, 0, -0.57),
+			armor.tier == 2 and Color3.fromRGB(94, 120, 139) or Color3.fromRGB(105, 72, 51))
+	end
+end
+
+local function visibility(model, visible, saved)
+	for part, original in pairs(saved) do
+		if part.Parent then
+			part.Transparency = visible and original.transparency or 1
+			part.CanCollide = visible and original.collide or false
+			part.CanQuery = visible and original.query or false
+		end
+	end
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA("BillboardGui") or descendant:IsA("ProximityPrompt") then
+			descendant.Enabled = visible
+		end
+	end
+end
+
+local function savedAppearance(model)
+	local saved = {}
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			saved[descendant] = {transparency=descendant.Transparency, collide=descendant.CanCollide, query=descendant.CanQuery}
+		end
+	end
+	return saved
+end
+
+local function updateEnemyLabel(record)
+	local model = record.model
+	model:SetAttribute("Health", record.health)
+	local gui = model:FindFirstChild("EnemyLabel", true)
+	if gui then
+		local healthLabel = gui:FindFirstChild("HealthLabel", true)
+		if healthLabel and healthLabel:IsA("TextLabel") then
+			healthLabel.Text = string.format("%d / %d", math.max(0, record.health), record.config.health)
+		end
+		local bar = gui:FindFirstChild("Bar", true)
+		local fill = bar and bar:FindFirstChild("Fill")
+		if fill then fill.Size = UDim2.fromScale(math.clamp(record.health / record.config.health, 0, 1), 1) end
+	end
+end
+
+for _, model in ipairs(world.Enemies:GetChildren()) do
+	local config = Config.Enemies[model:GetAttribute("EnemyType")]
+	if model:IsA("Model") and model.PrimaryPart and config then
+		local record = {
+			model=model, config=config, health=config.health, home=model:GetPivot(),
+			appearance=savedAppearance(model), lastAttack=0, target=nil,
+		}
+		mobs[model] = record
+		model:SetAttribute("Alive", true)
+		model:SetAttribute("MaxHealth", config.health)
+		updateEnemyLabel(record)
+	end
+end
+
+local function hurtEnemy(player, record, amount)
+	if record.health <= 0 then return end
+	record.health = math.max(0, record.health - amount)
+	record.target = player
+	updateEnemyLabel(record)
+	if record.health > 0 then return end
+	record.model:SetAttribute("Alive", false)
+	visibility(record.model, false, record.appearance)
+	local profile = Profiles.Get(player)
+	if profile then
+		profile.stats.kills += 1
+		local ok = Economy.Grant(profile, record.config.loot, record.config.silver, record.config.xp)
+		if not ok then
+			Economy.Grant(profile, {}, record.config.silver, record.config.xp)
+			notify(player, "Mochila cheia: recebeu prata e experiência, mas perdeu o saque.")
+		end
+		update(player, "+" .. record.config.xp .. " XP · +" .. record.config.silver .. " prata")
+	end
+	task.delay(record.config.respawn, function()
+		if not record.model.Parent or closing then return end
+		record.model:PivotTo(record.home)
+		record.health, record.target, record.lastAttack = record.config.health, nil, 0
+		record.model:SetAttribute("Alive", true)
+		visibility(record.model, true, record.appearance)
+		updateEnemyLabel(record)
+	end)
+end
+
+local function lineOfSight(character, target)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root or not target.PrimaryPart then return false end
+	local parameters = RaycastParams.new()
+	parameters.FilterType = Enum.RaycastFilterType.Exclude
+	parameters.FilterDescendantsInstances = {character, target}
+	local origin = root.Position + Vector3.new(0, 1, 0)
+	return workspace:Raycast(origin, target.PrimaryPart.Position - origin, parameters) == nil
+end
+
+local function attack(player, payload)
+	local root = body(player)
+	local profile = Profiles.Get(player)
+	if not root or not profile then return end
+	local skill = payload.skill or "basic"
+	if skill ~= "basic" and skill ~= "cleave" then return end
+	local range = skill == "cleave" and 18 or 15
+	local target = payload.target
+	if target == nil then
+		local closest = range
+		for model, record in pairs(mobs) do
+			if record.health > 0 and model.PrimaryPart then
+				local distance = (root.Position - model.PrimaryPart.Position).Magnitude
+				if distance < closest then target, closest = model, distance end
+			end
+		end
+	end
+	local record = typeof(target) == "Instance" and mobs[target] or nil
+	if not record or record.health <= 0 or not target.PrimaryPart
+		or (root.Position - target.PrimaryPart.Position).Magnitude > range
+		or not lineOfSight(player.Character, target) then return end
+	local session, now = sessions[player], os.clock()
+	if now < (session.cooldowns.attack or 0) or now < (session.cooldowns[skill] or 0) then return end
+	session.cooldowns.attack = now + 0.65
+	session.cooldowns[skill] = now + (skill == "cleave" and 5 or 0.65)
+	local damage = Economy.Stats(profile).damage
+	if skill == "cleave" then
+		effect(root.Position, Color3.fromRGB(231, 188, 102), 24)
+		for model, other in pairs(mobs) do
+			if other.health > 0 and model.PrimaryPart
+				and (root.Position - model.PrimaryPart.Position).Magnitude <= range
+				and lineOfSight(player.Character, model) then
+				hurtEnemy(player, other, math.floor(damage * 1.6))
+			end
+		end
+	else
+		effect(target.PrimaryPart.Position, Color3.fromRGB(246, 233, 185), 4)
+		hurtEnemy(player, record, damage)
+	end
+end
+
+local nodeAppearances = {}
+local function gather(player, node)
+	local root = body(player)
+	local profile = Profiles.Get(player)
+	if not root or not profile or typeof(node) ~= "Instance" or node.Parent ~= world.Resources
+		or not node:IsA("Model") or not node.PrimaryPart or node:GetAttribute("Available") ~= true
+		or (root.Position - node.PrimaryPart.Position).Magnitude > 14 then return end
+	local config = Config.Nodes[node:GetAttribute("NodeType")]
+	if not config or not cooldown(player, "gather", 1.25) then return end
+	local ok, message = Economy.Grant(profile, {[config.item]=config.amount}, 0, config.xp)
+	if not ok then notify(player, message); return end
+	profile.stats.gathered += config.amount
+	node:SetAttribute("Available", false)
+	visibility(node, false, nodeAppearances[node])
+	effect(node.PrimaryPart.Position, Color3.fromRGB(106, 221, 173), 5)
+	update(player, "+" .. config.amount .. " " .. Config.Items[config.item].name .. " · +" .. config.xp .. " XP")
+	task.delay(config.respawn, function()
+		if node.Parent and not closing then
+			node:SetAttribute("Available", true)
+			visibility(node, true, nodeAppearances[node])
+		end
+	end)
+end
+
+local function travel(player, id)
+	if type(id) ~= "string" then return end
+	local root = body(player)
+	if not root then return end
+	local destination
+	for _, region in ipairs(Config.Regions) do
+		if region.id == id then destination = region; break end
+	end
+	if not destination then return end
+	local validPortal = false
+	for _, portal in ipairs(world.Portals:GetChildren()) do
+		if portal:GetAttribute("Region") == id and portal.PrimaryPart
+			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 18 then
+			validPortal = true; break
+		end
+	end
+	if not validPortal then notify(player, "Aproxime-se do portal dessa região."); return end
+	if not cooldown(player, "travel", 2) then return end
+	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 5, 20)
+	player.Character:PivotTo(CFrame.new(position))
+	root.AssemblyLinearVelocity, root.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
+	sessions[player].region = id
+	player:SetAttribute("Region", id)
+	update(player, "Você chegou a " .. destination.name .. ".")
+end
+
+for _, node in ipairs(world.Resources:GetChildren()) do
+	if node:IsA("Model") then
+		nodeAppearances[node] = savedAppearance(node)
+		local prompt = node:FindFirstChild("GatherPrompt", true)
+		if prompt then prompt.Triggered:Connect(function(player)
+			if allowRequest(player) then gather(player, node) end
+		end) end
+	end
+end
+for _, portal in ipairs(world.Portals:GetChildren()) do
+	local prompt = portal:FindFirstChild("TravelPrompt", true)
+	if prompt then prompt.Triggered:Connect(function(player)
+		if allowRequest(player) then travel(player, portal:GetAttribute("Region")) end
+	end) end
+end
+
+-- The book is local to this server. Escrow is returned on cancellation/disconnect.
+-- Profiles also recover persisted unsold escrow after an unclean shutdown.
+local function returnListing(profile, listing)
+	profile.inventory[listing.item] = (profile.inventory[listing.item] or 0) + listing.count
+	if profile.marketEscrow then profile.marketEscrow[listing.id] = nil end
+	listings[listing.id] = nil
+end
+
+local function marketAction(player, name, payload)
+	local profile = Profiles.Get(player)
+	if not profile then return end
+	if not nearStation(player, "market") then notify(player, "Visite o mercado de Porto Bruma."); return end
+	if name == "list" then
+		if type(payload.item) ~= "string" or not Config.Items[payload.item]
+			or not integer(payload.count, 99) or not integer(payload.price, 100000) then return end
+		local ownCount = 0
+		for _, listing in pairs(listings) do if listing.seller == player then ownCount += 1 end end
+		if ownCount >= Config.MaxListings then notify(player, "Limite de anúncios atingido."); return end
+		local ok, message = Economy.Remove(profile, payload.item, payload.count)
+		if not ok then notify(player, message); return end
+		local id = HttpService:GenerateGUID(false)
+		listings[id] = {
+			id=id, item=payload.item, count=payload.count, price=payload.price,
+			seller=player, sellerId=player.UserId, sellerName=player.DisplayName,
+		}
+		profile.marketEscrow = profile.marketEscrow or {}
+		profile.marketEscrow[id] = {item=payload.item, count=payload.count}
+		updateMarket()
+		notify(player, "Anúncio criado. Taxa na venda: " .. math.floor(Config.MarketTax * 100) .. "%.")
+	elseif type(payload.id) == "string" then
+		local listing = listings[payload.id]
+		if not listing then notify(player, "Este anúncio já foi encerrado."); return end
+		if name == "cancelListing" then
+			if listing.seller ~= player then return end
+			returnListing(profile, listing)
+			updateMarket()
+			notify(player, "Anúncio cancelado; itens devolvidos.")
+		elseif name == "buyListing" then
+			if listing.seller == player then notify(player, "Este anúncio é seu."); return end
+			local sellerProfile = Profiles.Get(listing.seller)
+			local sellerSession = sessions[listing.seller]
+			if not sellerProfile or not sellerSession or not sellerSession.ready then
+				notify(player, "Vendedor indisponível."); return
+			end
+			local total = listing.price * listing.count
+			if profile.silver < total then notify(player, "Prata insuficiente."); return end
+			local proceeds = total - math.floor(total * Config.MarketTax)
+			if sellerProfile.silver + proceeds > 1000000000 then
+				notify(player, "O vendedor atingiu o limite de prata."); return
+			end
+			local ok, message = Economy.Add(profile, listing.item, listing.count)
+			if not ok then notify(player, message); return end
+			profile.silver -= total
+			sellerProfile.silver += proceeds
+			sellerProfile.marketEscrow[listing.id] = nil
+			listings[listing.id] = nil
+			updateMarket()
+			notify(player, "Compra concluída.")
+			notify(listing.seller, "Venda concluída: " .. Config.Items[listing.item].name .. ".")
+		end
+	end
+end
+
+local function handleAction(player, name, payload)
+	if not allowRequest(player) or type(name) ~= "string" or type(payload) ~= "table" then return end
+	local profile = Profiles.Get(player)
+	local _, humanoid = body(player)
+	if not profile or not humanoid then return end
+	if name == "attack" then attack(player, payload); return end
+	if name == "gather" then gather(player, payload.node); return end
+	if name == "travel" then travel(player, payload.region); return end
+	if name == "list" or name == "buyListing" or name == "cancelListing" then
+		marketAction(player, name, payload); return
+	end
+	local ok, message
+	if name == "buy" or name == "sell" then
+		if not nearStation(player, "shop") then notify(player, "Aproxime-se do mercador."); return end
+		if type(payload.item) ~= "string" or not integer(payload.count, 99) then return end
+		if name == "buy" then ok, message = Economy.Buy(profile, payload.item, payload.count)
+		else ok, message = Economy.Sell(profile, payload.item, payload.count) end
+	elseif name == "craft" then
+		if not nearStation(player, "craft") then notify(player, "Aproxime-se da forja."); return end
+		if type(payload.recipe) ~= "string" or not integer(payload.count, 99) then return end
+		ok, message = Economy.Craft(profile, payload.recipe, payload.count)
+	elseif name == "equip" then
+		if type(payload.item) ~= "string" then return end
+		ok, message = Economy.Equip(profile, payload.item)
+		if ok then equipmentVisual(player) end
+	elseif name == "use" then
+		if type(payload.item) ~= "string" then return end
+		if humanoid.Health >= humanoid.MaxHealth then notify(player, "Sua vida já está completa."); return end
+		if not cooldown(player, "use", 2) then return end
+		local healing
+		ok, message, healing = Economy.Consume(profile, payload.item)
+		if ok then
+			humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + healing)
+			effect(player.Character.HumanoidRootPart.Position, Color3.fromRGB(93, 230, 158), 6)
+		end
+	elseif name == "claim" then
+		if not nearStation(player, "quest") then notify(player, "Fale com o guia em Porto Bruma."); return end
+		ok, message = Economy.ClaimQuest(profile)
+	else return end
+	if ok then update(player, message) else notify(player, message or "Ação indisponível.") end
+end
+
+actionRemote.OnServerEvent:Connect(function(player, name, payload)
+	local ok, message = pcall(handleAction, player, name, payload)
+	if not ok then warn("[Brumavale] Ação rejeitada por erro interno:", message) end
+end)
+getState.OnServerInvoke = function(player)
+	if not allowRequest(player) then return nil end
+	return snapshot(player)
+end
+
+local function characterReady(player, character)
+	if character:GetAttribute("BrumavaleConfigured") then return end
+	character:SetAttribute("BrumavaleConfigured", true)
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	local root = character:WaitForChild("HumanoidRootPart", 10)
+	if not humanoid or not root then return end
+	while sessions[player] and not sessions[player].ready and player.Parent == Players do task.wait(0.1) end
+	local profile = Profiles.Get(player)
+	if not profile or player.Character ~= character then return end
+	local spawn = world:FindFirstChild("TownSpawn", true)
+	if spawn then character:PivotTo(spawn.CFrame + Vector3.new(0, 4, 0)) end
+	humanoid.MaxHealth = Economy.Stats(profile).maxHealth
+	humanoid.Health = humanoid.MaxHealth
+	humanoid.WalkSpeed = 19
+	sessions[player].region = "town"
+	player:SetAttribute("Region", "town")
+	equipmentVisual(player)
+	humanoid.Died:Connect(function()
+		local current = Profiles.Get(player)
+		if not current then return end
+		local lost = math.floor(current.silver * 0.1)
+		current.silver -= lost
+		update(player, "Você caiu. Retornará à cidade e perdeu " .. lost .. " prata (10%).")
+	end)
+	update(player)
+end
+
+local function playerAdded(player)
+	if sessions[player] then return end
+	sessions[player] = {ready=false, region="town", cooldowns={}, tokens=20, lastToken=os.clock()}
+	player:SetAttribute("ProfileReady", false)
+	player.CharacterAdded:Connect(function(character) task.spawn(characterReady, player, character) end)
+	local profile, message = Profiles.Load(player)
+	if not profile then
+		sessions[player] = nil
+		if player.Parent == Players then player:Kick("Não foi possível carregar seus dados com segurança. Tente novamente. " .. (message or "")) end
+		return
+	end
+	if player.Parent ~= Players or closing then
+		Profiles.Remove(player)
+		sessions[player] = nil
+		return
+	end
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		leaderstats = Instance.new("Folder")
+		leaderstats.Name, leaderstats.Parent = "leaderstats", player
+	end
+	for _, name in ipairs({"Prata", "Nível"}) do
+		if not leaderstats:FindFirstChild(name) then
+			local value = Instance.new("IntValue")
+			value.Name, value.Parent = name, leaderstats
+		end
+	end
+	sessions[player].ready = true
+	player:SetAttribute("ProfileReady", true)
+	player:SetAttribute("PersistenceEnabled", Profiles.IsPersistent(player))
+	local spawn = world:FindFirstChild("TownSpawn", true)
+	if spawn and spawn:IsA("SpawnLocation") then player.RespawnLocation = spawn end
+	if player.Character then task.spawn(characterReady, player, player.Character) end
+	update(player, Profiles.IsPersistent(player) and "Bem-vindo a Brumavale!" or "Modo de teste: progresso desta sessão não será salvo.")
+end
+
+local function playerRemoving(player)
+	local session = sessions[player]
+	if not session then return end
+	session.ready = false
+	local profile = Profiles.Get(player)
+	local owned = {}
+	for _, listing in pairs(listings) do
+		if listing.seller == player then table.insert(owned, listing) end
+	end
+	for _, listing in ipairs(owned) do
+		if profile then returnListing(profile, listing) else listings[listing.id] = nil end
+	end
+	updateMarket()
+	Profiles.Remove(player)
+	sessions[player] = nil
+end
+Players.PlayerAdded:Connect(function(player) task.spawn(playerAdded, player) end)
+Players.PlayerRemoving:Connect(playerRemoving)
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(playerAdded, player) end
+
+-- Fixed-rate lightweight AI; anchored mobs never receive client network ownership.
+local accumulator, regionAccumulator = 0, 0
+RunService.Heartbeat:Connect(function(dt)
+	accumulator += dt
+	regionAccumulator += dt
+	if accumulator < 0.15 or closing then return end
+	local step = math.min(accumulator, 0.3)
+	accumulator = 0
+	local now = os.clock()
+	for model, record in pairs(mobs) do
+		if record.health <= 0 or not model.PrimaryPart then continue end
+		local position = model.PrimaryPart.Position
+		local target, nearest = nil, record.config.aggro
+		for player, session in pairs(sessions) do
+			local root = session.ready and body(player)
+			local region = root and regionAt(root.Position)
+			if root and region and not region.safe and math.abs(root.Position.Y - position.Y) < 15 then
+				local distance = (root.Position - position).Magnitude
+				if distance < nearest and (root.Position - record.home.Position).Magnitude < 95 then
+					target, nearest = player, distance
+				end
+			end
+		end
+		record.target = target
+		local targetRoot, targetHumanoid
+		if target then targetRoot, targetHumanoid = body(target) end
+		local goal = targetRoot and targetRoot.Position or record.home.Position
+		local flat = Vector3.new(goal.X - position.X, 0, goal.Z - position.Z)
+		if flat.Magnitude > (targetRoot and 4.5 or 0.5) then
+			local advance = flat.Unit * math.min(flat.Magnitude, record.config.speed * step)
+			local nextPosition = model:GetPivot().Position + advance
+			model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + flat.Unit))
+		elseif targetHumanoid and now - record.lastAttack >= 1.35 and lineOfSight(target.Character, model) then
+			record.lastAttack = now
+			local profile = Profiles.Get(target)
+			if profile then
+				targetHumanoid:TakeDamage(math.max(1, record.config.damage - Economy.Stats(profile).defense))
+				effect(targetRoot.Position, Color3.fromRGB(231, 103, 101), 3)
+			end
+		end
+		if not target and (model:GetPivot().Position - record.home.Position).Magnitude < 1 and record.health < record.config.health then
+			record.health = record.config.health
+			updateEnemyLabel(record)
+		end
+	end
+	if regionAccumulator >= 1 then
+		local elapsed = math.min(regionAccumulator, 2)
+		regionAccumulator = 0
+		for player, session in pairs(sessions) do
+			local root, humanoid = body(player)
+			if root and session.ready then
+				local region = regionAt(root.Position)
+				local id = region and region.id or "wilds"
+				if id ~= session.region then
+					session.region = id
+					player:SetAttribute("Region", id)
+					update(player)
+				end
+				if region and region.safe then humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + elapsed * 5) end
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while not closing do
+		task.wait(Config.SaveInterval)
+		for player, session in pairs(sessions) do
+			if session.ready then task.spawn(function()
+				local ok = Profiles.Save(player)
+				if not ok and player.Parent == Players then
+					session.ready = false
+					player:Kick("Não foi possível salvar seu progresso com segurança. Reconecte para tentar novamente.")
+				end
+			end) end
+		end
+	end
+end)
+
+game:BindToClose(function()
+	closing = true
+	-- Stop economic mutations before recovering each seller's unsold inventory.
+	for player, session in pairs(sessions) do
+		session.ready = false
+		local profile = Profiles.Get(player)
+		if profile then
+			local owned = {}
+			for _, listing in pairs(listings) do
+				if listing.seller == player then table.insert(owned, listing) end
+			end
+			for _, listing in ipairs(owned) do returnListing(profile, listing) end
+		end
+	end
+	Profiles.Shutdown()
+end)
+
+print("[Brumavale] Servidor iniciado: 5 regiões, economia, combate, coleta e mercado local.")
+]=]
+
+Sources.Client = [=[
+-- Brumavale • interface e controles. Toda alteração de jogo é validada pelo servidor.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local Debris = game:GetService("Debris")
+
+local player = Players.LocalPlayer
+local package = ReplicatedStorage:WaitForChild("Brumavale")
+local Config = require(package:WaitForChild("Config"))
+local Action = package:WaitForChild("Action")
+local State = package:WaitForChild("State")
+local GetState = package:WaitForChild("GetState")
+local world = workspace:WaitForChild("BrumavaleWorld")
+local mouse = player:GetMouse()
+local palette = {
+    ink = Color3.fromRGB(14, 23, 32), panel = Color3.fromRGB(22, 35, 45),
+    raised = Color3.fromRGB(30, 47, 58), edge = Color3.fromRGB(58, 77, 85),
+    text = Color3.fromRGB(235, 232, 217), muted = Color3.fromRGB(158, 177, 181),
+    gold = Color3.fromRGB(222, 182, 98), teal = Color3.fromRGB(87, 194, 174),
+    red = Color3.fromRGB(218, 103, 98), green = Color3.fromRGB(123, 187, 132),
+}
+local snapshot
+local selectedItem = "sword1"
+local selectedRecipe = "plank"
+local activeTab = "inventory"
+local selectedEnemy
+local isometric = false
+local cooldowns = { basic = 0, cleave = 0, potion = 0 }
+local normalCameraType
+local normalCameraSubject
+local panelOpen = false
+local quantityText, priceText
+local renderPage, updateHUD, openPanel, toast
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrumavaleUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.DisplayOrder = 20
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local function create(className, parent, properties)
+    local object = Instance.new(className)
+    for key, value in pairs(properties or {}) do object[key] = value end
+    object.Parent = parent
+    return object
+end
+local function rounded(object, radius)
+    create("UICorner", object, { CornerRadius = UDim.new(0, radius or 8) })
+end
+local function stroke(object, color)
+    return create("UIStroke", object, { Color = color or palette.edge, Thickness = 1, Transparency = 0.3 })
+end
+local function frame(parent, properties)
+    properties.BorderSizePixel = 0
+    local object = create("Frame", parent, properties)
+    rounded(object)
+    return object
+end
+local function label(parent, text, properties)
+    local defaults = {
+        BackgroundTransparency = 1, BorderSizePixel = 0, Text = text,
+        TextColor3 = palette.text, Font = Enum.Font.Gotham, TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
+    }
+    for key, value in pairs(properties or {}) do defaults[key] = value end
+    return create("TextLabel", parent, defaults)
+end
+local function button(parent, text, properties, callback)
+    local defaults = {
+        BorderSizePixel = 0, BackgroundColor3 = palette.raised, Text = text,
+        TextColor3 = palette.text, Font = Enum.Font.GothamBold, TextSize = 13,
+        AutoButtonColor = true,
+    }
+    for key, value in pairs(properties or {}) do defaults[key] = value end
+    local object = create("TextButton", parent, defaults)
+    rounded(object, 6)
+    if callback then object.Activated:Connect(callback) end
+    return object
+end
+local function shortNumber(value)
+    value = math.floor(tonumber(value) or 0)
+    if value >= 1000000 then return string.format("%.1fM", value / 1000000) end
+    if value >= 10000 then return string.format("%.1fk", value / 1000) end
+    return tostring(value)
+end
+local function itemName(id)
+    return Config.Items[id] and Config.Items[id].name or tostring(id)
+end
+local function quantity()
+    return math.clamp(math.floor(tonumber(quantityText and quantityText.Text) or 1), 1, 99)
+end
+local function send(action, payload)
+    if not snapshot then toast("Seu aventureiro ainda está carregando.") return end
+    Action:FireServer(action, payload or {})
+end
+local function regionById(id)
+    for _, region in ipairs(Config.Regions) do
+        if region.id == id then return region end
+    end
+    return Config.Regions[1]
+end
+local function characterParts()
+    local character = player.Character
+    if not character then return nil, nil end
+    return character:FindFirstChild("HumanoidRootPart"), character:FindFirstChildOfClass("Humanoid")
+end
+
+-- HUD discreto, com áreas livres para o joystick e salto do Roblox.
+local identity = frame(gui, {Position = UDim2.fromOffset(16, 10), Size = UDim2.fromOffset(252, 102), BackgroundColor3 = palette.ink, BackgroundTransparency = 0.08})
+stroke(identity)
+local brandLabel = label(identity, "BRUMAVALE", {Position = UDim2.fromOffset(14, 9), Size = UDim2.new(1, -72, 0, 21), TextSize = 18, Font = Enum.Font.GothamBold, TextColor3 = palette.gold})
+local levelLabel = label(identity, "NV 1", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 10), Size = UDim2.fromOffset(52, 20), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = palette.teal, Font = Enum.Font.GothamBold})
+local regionLabel = label(identity, "Preparando aventura…", {Position = UDim2.fromOffset(14, 32), Size = UDim2.new(1, -28, 0, 18), TextSize = 11, TextColor3 = palette.muted})
+local hpBack = frame(identity, {Position = UDim2.fromOffset(14, 58), Size = UDim2.new(1, -28, 0, 16), BackgroundColor3 = palette.raised})
+local hpFill = frame(hpBack, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = palette.red})
+local hpLabel = label(hpBack, "100 / 100", {Size = UDim2.fromScale(1, 1), TextSize = 10, TextXAlignment = Enum.TextXAlignment.Center, Font = Enum.Font.GothamBold, ZIndex = 3})
+local xpBack = frame(identity, {Position = UDim2.fromOffset(14, 83), Size = UDim2.new(1, -28, 0, 5), BackgroundColor3 = palette.raised})
+local xpFill = frame(xpBack, {Size = UDim2.fromScale(0, 1), BackgroundColor3 = palette.teal})
+
+local wallet = frame(gui, {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 10), Size = UDim2.fromOffset(186, 78), BackgroundColor3 = palette.ink, BackgroundTransparency = 0.08})
+stroke(wallet)
+local silverLabel = label(wallet, "○  0 PRATA", {Position = UDim2.fromOffset(14, 10), Size = UDim2.new(1, -28, 0, 23), TextColor3 = palette.gold, Font = Enum.Font.GothamBold, TextSize = 16})
+local weightLabel = label(wallet, "Mochila 0 / 100", {Position = UDim2.fromOffset(14, 36), Size = UDim2.new(1, -28, 0, 17), TextSize = 11, TextColor3 = palette.muted})
+local persistenceLabel = label(wallet, "Carregando…", {Position = UDim2.fromOffset(14, 55), Size = UDim2.new(1, -28, 0, 14), TextSize = 9, TextColor3 = palette.muted})
+
+local questCard = frame(gui, {Position = UDim2.fromOffset(16, 122), Size = UDim2.fromOffset(252, 116), BackgroundColor3 = palette.ink, BackgroundTransparency = 0.15})
+stroke(questCard)
+label(questCard, "JORNADA DO AVENTUREIRO", {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 16), TextSize = 9, TextColor3 = palette.gold, Font = Enum.Font.GothamBold})
+local questTitle = label(questCard, "Bem-vindo a Brumavale", {Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -24, 0, 20), TextSize = 12, Font = Enum.Font.GothamBold})
+local questProgress = label(questCard, "Explore a praça para começar.", {Position = UDim2.fromOffset(12, 51), Size = UDim2.new(1, -24, 0, 28), TextSize = 11, TextColor3 = palette.muted, TextWrapped = true})
+local claimButton = button(questCard, "Ver jornada", {Position = UDim2.fromOffset(12, 84), Size = UDim2.new(1, -24, 0, 23), TextSize = 10}, function()
+    if snapshot and snapshot.quest and snapshot.quest.complete then send("claim") else openPanel("help") end
+end)
+
+local toastFrame = frame(gui, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 114), Size = UDim2.fromOffset(430, 48), BackgroundColor3 = palette.ink, Visible = false, ZIndex = 30})
+stroke(toastFrame, palette.gold)
+local toastText = label(toastFrame, "", {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 1, -12), TextSize = 13, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 31})
+local toastSequence = 0
+toast = function(message)
+    if type(message) ~= "string" or message == "" then return end
+    toastSequence = toastSequence + 1
+    local sequence = toastSequence
+    toastText.Text = message
+    toastFrame.Visible = true
+    task.delay(4, function() if toastSequence == sequence then toastFrame.Visible = false end end)
+end
+
+local targetFrame = frame(gui, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 14), Size = UDim2.fromOffset(230, 56), BackgroundColor3 = palette.ink, Visible = false})
+local targetName = label(targetFrame, "", {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 20), TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
+local targetHealth = label(targetFrame, "", {Position = UDim2.fromOffset(12, 29), Size = UDim2.new(1, -24, 0, 18), TextSize = 11, TextColor3 = palette.red, TextXAlignment = Enum.TextXAlignment.Center})
+local targetHighlight = create("Highlight", world, {Name = "LocalTargetHighlight", Enabled = false, FillColor = palette.red, FillTransparency = 0.85, OutlineColor = palette.gold, OutlineTransparency = 0.15, DepthMode = Enum.HighlightDepthMode.Occluded})
+
+local function validEnemy(model)
+    local enemies = world:FindFirstChild("Enemies")
+    return typeof(model) == "Instance" and model:IsA("Model") and enemies and model.Parent == enemies and model.PrimaryPart and model:GetAttribute("Alive") ~= false and (model:GetAttribute("Health") or 0) > 0
+end
+local function nearestEnemy(range)
+    local root = characterParts()
+    local enemies = world:FindFirstChild("Enemies")
+    if not root or not enemies then return nil end
+    local nearest, distance = nil, range or 18
+    for _, enemy in ipairs(enemies:GetChildren()) do
+        if validEnemy(enemy) then
+            local current = (root.Position - enemy.PrimaryPart.Position).Magnitude
+            if current <= distance then nearest, distance = enemy, current end
+        end
+    end
+    return nearest
+end
+local function setTarget(enemy)
+    selectedEnemy = enemy
+    targetHighlight.Adornee = enemy
+    targetHighlight.Enabled = enemy ~= nil
+end
+local function attack(skill)
+    if UserInputService:GetFocusedTextBox() then return end
+    if os.clock() < cooldowns[skill] then return end
+    local root, humanoid = characterParts()
+    if not root or not humanoid or humanoid.Health <= 0 then return end
+    if not validEnemy(selectedEnemy) then setTarget(nearestEnemy(skill == "cleave" and 18 or 15)) end
+    if not selectedEnemy then toast("Aproxime-se de um inimigo e toque em Atacar.") return end
+    if (root.Position - selectedEnemy.PrimaryPart.Position).Magnitude > (skill == "cleave" and 18 or 15) then
+        toast("Aproxime-se do alvo para atacar.") return
+    end
+    cooldowns[skill] = os.clock() + (skill == "cleave" and 5 or 0.65)
+    send("attack", {target = selectedEnemy, skill = skill})
+end
+local function usePotion()
+    if os.clock() < cooldowns.potion then return end
+    cooldowns.potion = os.clock() + 2
+    send("use", {item = "potion"})
+end
+
+local hotbar = frame(gui, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.fromOffset(382, 66), BackgroundColor3 = palette.ink, BackgroundTransparency = 0.05})
+stroke(hotbar)
+local basicButton = button(hotbar, "ATACAR\nClique", {Position = UDim2.fromOffset(7, 7), Size = UDim2.fromOffset(88, 52), TextSize = 11, TextColor3 = palette.gold}, function() attack("basic") end)
+local cleaveButton = button(hotbar, "Q  •  CORTE\nEm área", {Position = UDim2.fromOffset(100, 7), Size = UDim2.fromOffset(88, 52), TextSize = 11}, function() attack("cleave") end)
+local potionButton = button(hotbar, "R  •  POÇÃO\nCurar", {Position = UDim2.fromOffset(193, 7), Size = UDim2.fromOffset(88, 52), TextSize = 11, TextColor3 = palette.teal}, usePotion)
+button(hotbar, "I  •  BOLSA\nEquipar", {Position = UDim2.fromOffset(286, 7), Size = UDim2.fromOffset(88, 52), TextSize = 11}, function() openPanel("inventory") end)
+local hotbarScale = create("UIScale", hotbar, {Scale = 1})
+
+local navigation = frame(gui, {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 96), Size = UDim2.fromOffset(186, 34), BackgroundTransparency = 1})
+button(navigation, "Mapa", {Size = UDim2.fromOffset(58, 32), TextSize = 11}, function() openPanel("world") end)
+local cameraButton = button(navigation, "Câmera", {Position = UDim2.fromOffset(64, 0), Size = UDim2.fromOffset(58, 32), TextSize = 10})
+button(navigation, "Ajuda", {Position = UDim2.fromOffset(128, 0), Size = UDim2.fromOffset(58, 32), TextSize = 11}, function() openPanel("help") end)
+
+-- Painéis partilham a mesma seleção e nunca alteram o inventário localmente.
+local panel = frame(gui, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(820, 500), BackgroundColor3 = palette.ink, Visible = false, ZIndex = 10})
+stroke(panel, palette.gold)
+label(panel, "BRUMAVALE  /  AVENTUREIRO", {Position = UDim2.fromOffset(18, 10), Size = UDim2.new(1, -72, 0, 20), TextSize = 11, TextColor3 = palette.gold, Font = Enum.Font.GothamBold, ZIndex = 11})
+button(panel, "×", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 7), Size = UDim2.fromOffset(30, 28), TextSize = 22, ZIndex = 11}, function()
+    panelOpen = false panel.Visible = false
+end)
+local tabStrip = create("ScrollingFrame", panel, {Position = UDim2.fromOffset(12, 39), Size = UDim2.new(1, -24, 0, 40), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollingDirection = Enum.ScrollingDirection.X, CanvasSize = UDim2.fromOffset(642, 0), ZIndex = 11})
+local tabDefinitions = {{"inventory", "Inventário"}, {"craft", "Fabricação"}, {"shop", "Mercador"}, {"market", "Mercado"}, {"world", "Regiões"}, {"help", "Jornada"}}
+local tabButtons = {}
+for index, definition in ipairs(tabDefinitions) do
+    local tabId = definition[1]
+    tabButtons[tabId] = button(tabStrip, definition[2], {Position = UDim2.fromOffset((index - 1) * 107, 0), Size = UDim2.fromOffset(102, 33), TextSize = 11, ZIndex = 12}, function() openPanel(tabId) end)
+end
+local pageTitle = label(panel, "", {Position = UDim2.fromOffset(18, 85), Size = UDim2.new(1, -36, 0, 20), Font = Enum.Font.GothamBold, TextSize = 15, ZIndex = 11})
+local pageHint = label(panel, "", {Position = UDim2.fromOffset(18, 108), Size = UDim2.new(1, -36, 0, 36), TextSize = 11, TextWrapped = true, TextColor3 = palette.muted, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 11})
+local body = create("ScrollingFrame", panel, {Position = UDim2.fromOffset(14, 148), Size = UDim2.new(1, -28, 1, -284), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = palette.edge, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 11})
+create("UIListLayout", body, {Padding = UDim.new(0, 7), SortOrder = Enum.SortOrder.LayoutOrder})
+create("UIPadding", body, {PaddingRight = UDim.new(0, 7), PaddingBottom = UDim.new(0, 7)})
+local footer = frame(panel, {AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 14, 1, -12), Size = UDim2.new(1, -28, 0, 116), BackgroundColor3 = palette.panel, ZIndex = 11})
+local footerTitle = label(footer, "Selecione um item", {Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 22), TextSize = 12, Font = Enum.Font.GothamBold, ZIndex = 12})
+local footerHint = label(footer, "", {Position = UDim2.fromOffset(12, 29), Size = UDim2.new(1, -24, 0, 21), TextSize = 10, TextColor3 = palette.muted, TextWrapped = true, ZIndex = 12})
+local footerActions = frame(footer, {Position = UDim2.fromOffset(12, 56), Size = UDim2.new(1, -24, 0, 48), BackgroundTransparency = 1, ZIndex = 12})
+local quantityHolder = frame(footerActions, {Size = UDim2.fromOffset(54, 44), BackgroundColor3 = palette.ink, ZIndex = 12})
+label(quantityHolder, "QTD", {Size = UDim2.new(1, 0, 0, 15), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 8, TextColor3 = palette.muted, ZIndex = 13})
+quantityText = create("TextBox", quantityHolder, {Position = UDim2.fromOffset(2, 15), Size = UDim2.new(1, -4, 0, 27), BackgroundTransparency = 1, Text = "1", ClearTextOnFocus = false, TextColor3 = palette.text, Font = Enum.Font.GothamBold, TextSize = 14, ZIndex = 13})
+local priceHolder = frame(footerActions, {Position = UDim2.fromOffset(62, 0), Size = UDim2.fromOffset(74, 44), BackgroundColor3 = palette.ink, ZIndex = 12, Visible = false})
+label(priceHolder, "PRATA / UN.", {Size = UDim2.new(1, 0, 0, 15), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 8, TextColor3 = palette.muted, ZIndex = 13})
+priceText = create("TextBox", priceHolder, {Position = UDim2.fromOffset(2, 15), Size = UDim2.new(1, -4, 0, 27), BackgroundTransparency = 1, Text = "10", ClearTextOnFocus = false, TextColor3 = palette.gold, Font = Enum.Font.GothamBold, TextSize = 14, ZIndex = 13})
+local actionContainer = frame(footerActions, {Position = UDim2.fromOffset(62, 0), Size = UDim2.new(1, -62, 1, 0), BackgroundTransparency = 1, ZIndex = 12})
+create("UIListLayout", actionContainer, {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder})
+
+local kindNames = {resource = "Recurso", weapon = "Arma", armor = "Armadura", consumable = "Consumível"}
+local itemSymbols = {wood = "TR", stone = "PD", fiber = "FB", ore = "FE", hide = "CR", crystal = "CR", plank = "TB", ingot = "LG", cloth = "TC", sword1 = "I", sword2 = "II", sword3 = "III", armor1 = "I", armor2 = "II", potion = "+"}
+local function clearList(container)
+    for _, object in ipairs(container:GetChildren()) do
+        if object:IsA("GuiObject") then object:Destroy() end
+    end
+end
+local function row(order, title, description, symbol, accent, actionText, callback, chosen, height)
+    local card = frame(body, {Size = UDim2.new(1, 0, 0, height or 65), BackgroundColor3 = chosen and palette.raised or palette.panel, LayoutOrder = order, ZIndex = 12})
+    if chosen then stroke(card, palette.gold) end
+    local icon = frame(card, {Position = UDim2.fromOffset(8, 10), Size = UDim2.fromOffset(40, 42), BackgroundColor3 = palette.ink, ZIndex = 13})
+    label(icon, symbol or "·", {Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 16, Font = Enum.Font.GothamBold, TextColor3 = accent or palette.gold, ZIndex = 14})
+    local rightSpace = actionText and 92 or 12
+    label(card, title, {Position = UDim2.fromOffset(58, 9), Size = UDim2.new(1, -58 - rightSpace, 0, 22), TextSize = 12, TextTruncate = Enum.TextTruncate.AtEnd, Font = Enum.Font.GothamBold, ZIndex = 13})
+    label(card, description, {Position = UDim2.fromOffset(58, 32), Size = UDim2.new(1, -58 - rightSpace, 1, -37), TextSize = 10, TextWrapped = true, TextColor3 = palette.muted, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 13})
+    if actionText then
+        button(card, actionText, {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(76, 34), TextSize = 10, TextColor3 = accent or palette.teal, ZIndex = 14}, callback)
+    end
+    return card
+end
+local function footerAction(text, callback, color, count)
+    return button(actionContainer, text, {Size = UDim2.new(1 / (count or 1), -(5 * ((count or 1) - 1) / (count or 1)), 1, -4), TextSize = 10, TextColor3 = color or palette.text, TextWrapped = true, ZIndex = 13}, callback)
+end
+local function sortedItems(filter)
+    local ids = {}
+    for id, item in pairs(Config.Items) do if not filter or filter(id, item) then table.insert(ids, id) end end
+    table.sort(ids, function(a, b)
+        local left, right = Config.Items[a], Config.Items[b]
+        if left.tier ~= right.tier then return (left.tier or 1) < (right.tier or 1) end
+        return left.name < right.name
+    end)
+    return ids
+end
+local function resetFooter()
+    clearList(actionContainer)
+    quantityHolder.Visible = true
+    priceHolder.Visible = false
+    actionContainer.Position = UDim2.fromOffset(62, 0)
+    actionContainer.Size = UDim2.new(1, -62, 1, 0)
+    footerTitle.Text = ""
+    footerHint.Text = ""
+    footer.Visible = true
+    body.Size = UDim2.new(1, -28, 1, -284)
+end
+local function expandBody()
+    footer.Visible = false
+    body.Size = UDim2.new(1, -28, 1, -164)
+end
+local function itemDetails(id)
+    local item = Config.Items[id]
+    if not item then return "" end
+    local details = "T" .. tostring(item.tier or 1) .. "  •  " .. (kindNames[item.kind] or "Item")
+    if item.damage then details = details .. "  •  " .. item.damage .. " dano" end
+    if item.defense then details = details .. "  •  " .. item.defense .. " defesa" end
+    if item.heal then details = details .. "  •  +" .. item.heal .. " vida" end
+    return details
+end
+local function showInventory()
+    pageTitle.Text = "Sua mochila"
+    pageHint.Text = "Selecione equipamentos para vestir. Vendas exigem proximidade do mercador; anúncios, do mercado."
+    local inventory = snapshot.inventory or {}
+    local ids = sortedItems(function(id) return (inventory[id] or 0) > 0 end)
+    if #ids == 0 then row(1, "Mochila vazia", "Colete recursos nas regiões próximas à cidade.", "·", palette.muted) end
+    for index, id in ipairs(ids) do
+        local equipped = snapshot.equipment and (snapshot.equipment.weapon == id or snapshot.equipment.armor == id)
+        row(index, itemName(id) .. " ×" .. tostring(inventory[id]), itemDetails(id) .. (equipped and "  •  equipado" or ""), itemSymbols[id], equipped and palette.teal or palette.gold, "Selecionar", function() selectedItem = id renderPage() end, selectedItem == id)
+    end
+    local item = Config.Items[selectedItem]
+    footerTitle.Text = item and item.name or "Selecione um item"
+    footerHint.Text = item and ("Venda: " .. tostring(item.sell or 0) .. " prata/un.  •  Peso: " .. tostring(item.weight or 0) .. "  •  Dano " .. tostring(snapshot.damage or 0) .. " / Defesa " .. tostring(snapshot.defense or 0)) or ""
+    footerAction(item and item.kind == "consumable" and "Usar" or "Equipar", function()
+        if item and item.kind == "consumable" then send("use", {item = selectedItem}) else send("equip", {item = selectedItem}) end
+    end, palette.teal, 3)
+    footerAction("Vender", function() send("sell", {item = selectedItem, count = quantity()}) end, palette.gold, 3)
+    footerAction("Anunciar", function() openPanel("market") end, palette.text, 3)
+end
+local function showCraft()
+    pageTitle.Text = "Forja & oficina"
+    pageHint.Text = "Colete matérias-primas, refine e fabrique. Para concluir, aproxime-se da oficina da cidade."
+    local recipes = {}
+    for id in pairs(Config.Recipes) do table.insert(recipes, id) end
+    table.sort(recipes, function(a, b) return (Config.Recipes[a].level or 1) == (Config.Recipes[b].level or 1) and itemName(a) < itemName(b) or (Config.Recipes[a].level or 1) < (Config.Recipes[b].level or 1) end)
+    for index, id in ipairs(recipes) do
+        local recipe = Config.Recipes[id]
+        local ingredients = {}
+        for ingredient, count in pairs(recipe.ingredients) do table.insert(ingredients, itemName(ingredient) .. " " .. tostring((snapshot.inventory or {})[ingredient] or 0) .. "/" .. count) end
+        table.sort(ingredients)
+        row(index, itemName(id) .. " ×" .. (recipe.amount or 1) .. "  •  Nv " .. (recipe.level or 1), table.concat(ingredients, " · "), itemSymbols[id], palette.teal, "Receita", function() selectedRecipe = id renderPage() end, selectedRecipe == id, 76)
+    end
+    local recipe = Config.Recipes[selectedRecipe]
+    footerTitle.Text = itemName(selectedRecipe)
+    footerHint.Text = recipe and ("Taxa por fabricação: " .. tostring(recipe.fee or 0) .. " prata  •  Nível " .. tostring(recipe.level or 1) .. " necessário") or "Selecione uma receita."
+    footerAction("Fabricar", function() send("craft", {recipe = selectedRecipe, count = quantity()}) end, palette.teal)
+end
+local function showShop()
+    pageTitle.Text = "Mercador de Brumavale"
+    pageHint.Text = "O mercador compra e vende por preços fixos. Fique próximo à banca para negociar."
+    for index, id in ipairs(sortedItems(function(_, item) return type(item.buy) == "number" and item.buy > 0 end)) do
+        local item = Config.Items[id]
+        row(index, item.name, itemDetails(id) .. "  •  " .. item.buy .. " prata/un.", itemSymbols[id], palette.gold, "Selecionar", function() selectedItem = id renderPage() end, selectedItem == id)
+    end
+    local item = Config.Items[selectedItem]
+    footerTitle.Text = itemName(selectedItem)
+    footerHint.Text = item and ("Compra: " .. tostring(item.buy or "—") .. " prata/un.  •  Venda: " .. tostring(item.sell or "—") .. " prata/un.") or ""
+    footerAction("Comprar", function() send("buy", {item = selectedItem, count = quantity()}) end, palette.teal, 2)
+    footerAction("Vender", function() send("sell", {item = selectedItem, count = quantity()}) end, palette.gold, 2)
+end
+local function showMarket()
+    pageTitle.Text = "Mercado dos viajantes"
+    pageHint.Text = "Ofertas deste servidor. Itens ficam reservados; anúncios retornam ao sair. Taxa de venda: " .. tostring(math.floor((Config.MarketTax or 0.05) * 100)) .. "%."
+    local listings = snapshot.market and snapshot.market.listings or {}
+    for index, listing in ipairs(listings) do
+        local own = listing.sellerId == player.UserId
+        row(index, itemName(listing.item) .. " ×" .. listing.count, tostring(listing.price) .. "/un.  •  Total " .. shortNumber(listing.price * listing.count) .. " prata\n" .. tostring(listing.sellerName or "Viajante"), itemSymbols[listing.item], own and palette.gold or palette.teal, own and "Cancelar" or "Comprar", function()
+            send(own and "cancelListing" or "buyListing", {id = listing.id})
+        end, false, 80)
+    end
+    if #listings == 0 then row(1, "A primeira oferta pode ser sua", "Escolha um item na mochila, defina quantidade e preço e anuncie junto ao mercado.", "○", palette.gold, nil, nil, false, 90) end
+    footerTitle.Text = "Anunciar: " .. itemName(selectedItem)
+    footerHint.Text = "Escolha o item na aba Inventário. Preço por unidade; fique junto ao mercado."
+    priceHolder.Visible = true
+    actionContainer.Position = UDim2.fromOffset(144, 0)
+    actionContainer.Size = UDim2.new(1, -144, 1, 0)
+    footerAction("Anunciar", function()
+        local price = math.clamp(math.floor(tonumber(priceText.Text) or 1), 1, 100000)
+        send("list", {item = selectedItem, count = quantity(), price = price})
+    end, palette.gold)
+end
+local function showWorld()
+    pageTitle.Text = "Atlas de Brumavale"
+    pageHint.Text = "A cidade liga quatro regiões. Aproxime-se de um portal correspondente para viajar ou percorra as pontes."
+    expandBody()
+    for index, region in ipairs(Config.Regions) do
+        local current = snapshot.region == region.id
+        local color = region.color and Color3.fromRGB(region.color[1], region.color[2], region.color[3]) or palette.teal
+        row(index, region.name .. (current and "  •  você está aqui" or ""), (region.safe and "Cidade segura · comércio e fabricação" or "Exploração PvE · nível sugerido " .. tostring(region.level or 1)) .. "\nUse E no portal; viajar requer estar próximo dele.", region.safe and "⌂" or "◇", color, "Viajar", function() send("travel", {region = region.id}) end, current, 90)
+    end
+end
+local function showHelp()
+    pageTitle.Text = "Sua jornada"
+    pageHint.Text = "Um mundo de recursos, equipamentos e expedições. Comece coletando, melhore sua espada e enfrente as ruínas."
+    expandBody()
+    local quest = snapshot.quest
+    if quest then
+        row(1, quest.title or "Jornada", (quest.description or "") .. "\n" .. tostring(quest.current or 0) .. "/" .. tostring(quest.target or 1) .. " · " .. tostring(quest.rewardSilver or 0) .. " prata / " .. tostring(quest.rewardXP or 0) .. " XP. Resgate junto ao mestre na cidade.", "!", palette.gold, quest.complete and "Resgatar" or nil, function() send("claim") end, false, 112)
+    end
+    row(2, "01  •  Colete e refine", "E nos recursos para coletar. Leve madeira, minério e fibras à oficina para refinar e fabricar equipamentos.", "01", palette.teal, nil, nil, false, 93)
+    row(3, "02  •  Equipe e lute", "I abre a mochila. Clique em um inimigo próximo para atacar; Q aplica corte em área; R usa uma poção. No celular, use os botões inferiores.", "02", palette.red, nil, nil, false, 105)
+    row(4, "03  •  Construa sua economia", "Venda recursos ao mercador ou anuncie itens para jogadores deste servidor. Vendas e fabricação exigem proximidade das bancas.", "03", palette.gold, nil, nil, false, 100)
+    row(5, "Controles", "WASD / joystick: mover · Espaço: saltar · E: interagir · I: inventário · C: fabricar · M: mapa · V: câmera · Esc: fechar painel.", "⌨", palette.muted, nil, nil, false, 104)
+    row(6, "Sobre esta versão", "Protótipo original com combate PvE e mercado por servidor. No Studio, o progresso é temporário. Servidores publicados usam salvamento quando disponível.", "i", palette.muted, nil, nil, false, 104)
+end
+renderPage = function()
+    if not snapshot or not panelOpen then return end
+    local scroll = body.CanvasPosition
+    clearList(body)
+    resetFooter()
+    for id, tab in pairs(tabButtons) do
+        tab.BackgroundColor3 = id == activeTab and palette.gold or palette.raised
+        tab.TextColor3 = id == activeTab and palette.ink or palette.text
+    end
+    if activeTab == "inventory" then showInventory()
+    elseif activeTab == "craft" then showCraft()
+    elseif activeTab == "shop" then showShop()
+    elseif activeTab == "market" then showMarket()
+    elseif activeTab == "world" then showWorld()
+    else showHelp() end
+    body.CanvasPosition = scroll
+end
+openPanel = function(tab)
+    if not snapshot then toast("Aguardando seu aventureiro…") return end
+    if activeTab ~= tab then body.CanvasPosition = Vector2.zero end
+    activeTab = tab
+    panelOpen = true
+    panel.Visible = true
+    renderPage()
+end
+
+local healthConnection
+local maxHealthConnection
+local function updateHealth()
+    local _, humanoid = characterParts()
+    if not humanoid then return end
+    local ratio = math.clamp(humanoid.Health / math.max(humanoid.MaxHealth, 1), 0, 1)
+    hpFill.Size = UDim2.fromScale(ratio, 1)
+    hpLabel.Text = tostring(math.ceil(humanoid.Health)) .. " / " .. tostring(math.ceil(humanoid.MaxHealth))
+end
+local function onCharacter(character)
+    if healthConnection then healthConnection:Disconnect() end
+    if maxHealthConnection then maxHealthConnection:Disconnect() end
+    setTarget(nil)
+    local humanoid = character:WaitForChild("Humanoid", 10)
+    if not humanoid then return end
+    healthConnection = humanoid.HealthChanged:Connect(updateHealth)
+    maxHealthConnection = humanoid:GetPropertyChangedSignal("MaxHealth"):Connect(updateHealth)
+    updateHealth()
+    if not isometric and workspace.CurrentCamera then workspace.CurrentCamera.CameraSubject = humanoid end
+end
+player.CharacterAdded:Connect(onCharacter)
+if player.Character then task.spawn(onCharacter, player.Character) end
+
+updateHUD = function()
+    if not snapshot then return end
+    local level = snapshot.level or Config.LevelForXP(snapshot.xp or 0)
+    levelLabel.Text = "NV " .. tostring(level)
+    local region = regionById(snapshot.region or player:GetAttribute("Region") or "town")
+    regionLabel.Text = region.name .. (region.safe and "  •  ZONA SEGURA" or "  •  EXPLORAÇÃO")
+    silverLabel.Text = "○  " .. shortNumber(snapshot.silver) .. " PRATA"
+    weightLabel.Text = "Mochila " .. string.format("%.1f", snapshot.weight or 0) .. " / " .. tostring(snapshot.capacity or Config.Capacity)
+    weightLabel.TextColor3 = (snapshot.weight or 0) >= (snapshot.capacity or Config.Capacity) * 0.9 and palette.gold or palette.muted
+    persistenceLabel.Text = snapshot.persistent and "PROGRESSO PERSISTENTE" or "SESSÃO TEMPORÁRIA"
+    local floorXP = Config.XPForLevel(level)
+    local ceilingXP = Config.XPForLevel(level + 1)
+    xpFill.Size = UDim2.fromScale(math.clamp(((snapshot.xp or 0) - floorXP) / math.max(ceilingXP - floorXP, 1), 0, 1), 1)
+    local quest = snapshot.quest
+    if quest then
+        questTitle.Text = quest.title or "Jornada"
+        questProgress.Text = tostring(quest.current or 0) .. " / " .. tostring(quest.target or 1) .. "  •  " .. (quest.description or "")
+        claimButton.Text = quest.complete and "Resgatar recompensa" or "Ver jornada"
+        claimButton.TextColor3 = quest.complete and palette.gold or palette.text
+    else
+        questTitle.Text = "Jornada concluída"
+        questProgress.Text = "Explore, fabrique e negocie livremente."
+        claimButton.Text = "Abrir guia"
+    end
+end
+local function acceptState(nextSnapshot, message)
+    if type(nextSnapshot) == "table" then
+        snapshot = nextSnapshot
+        updateHUD()
+        renderPage()
+    end
+    if message then toast(message) end
+end
+State.OnClientEvent:Connect(acceptState)
+player:GetAttributeChangedSignal("Region"):Connect(function()
+    if snapshot then snapshot.region = player:GetAttribute("Region") updateHUD() end
+end)
+
+ProximityPromptService.PromptTriggered:Connect(function(prompt, triggeringPlayer)
+    if triggeringPlayer and triggeringPlayer ~= player then return end
+    if prompt.Name ~= "StationPrompt" then return end
+    local model = prompt:FindFirstAncestorWhichIsA("Model")
+    if not model or not model:IsDescendantOf(world) then return end
+    local station = model:GetAttribute("Station")
+    if station == "quest" then openPanel("help")
+    elseif station == "shop" or station == "craft" or station == "market" then openPanel(station) end
+end)
+
+local function toggleCamera()
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    isometric = not isometric
+    if isometric then
+        normalCameraType, normalCameraSubject = camera.CameraType, camera.CameraSubject
+        camera.CameraType = Enum.CameraType.Scriptable
+        cameraButton.TextColor3 = palette.teal
+    else
+        camera.CameraType = normalCameraType or Enum.CameraType.Custom
+        local _, humanoid = characterParts()
+        camera.CameraSubject = humanoid or normalCameraSubject
+        cameraButton.TextColor3 = palette.text
+    end
+end
+cameraButton.Activated:Connect(toggleCamera)
+UserInputService.InputBegan:Connect(function(input, processed)
+    if UserInputService:GetFocusedTextBox() then return end
+    if input.KeyCode == Enum.KeyCode.Escape and panelOpen then panelOpen = false panel.Visible = false return end
+    if processed then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not panelOpen then
+        local target = mouse.Target
+        local enemy = target and target:FindFirstAncestorWhichIsA("Model")
+        if validEnemy(enemy) then setTarget(enemy) attack("basic") end
+    elseif input.KeyCode == Enum.KeyCode.Q then attack("cleave")
+    elseif input.KeyCode == Enum.KeyCode.R then usePotion()
+    elseif input.KeyCode == Enum.KeyCode.V then toggleCamera()
+    elseif input.KeyCode == Enum.KeyCode.I or input.KeyCode == Enum.KeyCode.C or input.KeyCode == Enum.KeyCode.M then
+        local tab = input.KeyCode == Enum.KeyCode.I and "inventory" or input.KeyCode == Enum.KeyCode.C and "craft" or "world"
+        if panelOpen and activeTab == tab then panelOpen = false panel.Visible = false else openPanel(tab) end
+    end
+end)
+
+local function configureLayout()
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    local viewport = camera.ViewportSize
+    local compact = viewport.X < 600
+    local short = viewport.Y < 520
+    identity.Size = UDim2.fromOffset(compact and math.min(190, math.floor((viewport.X - 24) * 0.56)) or 252, 102)
+    wallet.Size = UDim2.fromOffset(compact and math.min(150, math.floor((viewport.X - 24) * 0.44)) or 186, 78)
+    brandLabel.TextSize = compact and 13 or 18
+    silverLabel.TextSize = compact and 13 or 16
+    navigation.Size = UDim2.fromOffset(186, 34)
+    if compact then
+        wallet.Position = UDim2.new(1, -8, 0, 10)
+        identity.Position = UDim2.fromOffset(8, 10)
+        navigation.Position = UDim2.new(1, -8, 0, 122)
+    else
+        wallet.Position = UDim2.new(1, -16, 0, 10)
+        identity.Position = UDim2.fromOffset(16, 10)
+        navigation.Position = UDim2.new(1, -16, 0, 96)
+    end
+    questCard.Visible = not compact and not short and not panelOpen
+    targetFrame.Position = UDim2.new(0.5, 0, 0, compact and 164 or 14)
+    targetFrame.Size = UDim2.fromOffset(compact and 200 or 230, 56)
+    toastFrame.Size = UDim2.fromOffset(math.min(430, viewport.X - 24), 48)
+    toastFrame.Position = UDim2.new(0.5, 0, 0, compact and 224 or 114)
+    panel.Size = UDim2.fromOffset(math.min(820, viewport.X - 24), math.min(560, viewport.Y - (short and 24 or 100)))
+    hotbarScale.Scale = math.min(1, (viewport.X - (UserInputService.TouchEnabled and 110 or 24)) / 382)
+    hotbar.Position = UDim2.new(0.5, 0, 1, UserInputService.TouchEnabled and -95 or -18)
+end
+local layoutClock = 0
+RunService.RenderStepped:Connect(function(dt)
+    local camera = workspace.CurrentCamera
+    local root = characterParts()
+    if isometric and camera and root then
+        local focus = root.Position + Vector3.new(0, 2, 0)
+        camera.CameraType = Enum.CameraType.Scriptable
+        camera.CFrame = CFrame.lookAt(focus + Vector3.new(44, 54, 44), focus)
+        camera.Focus = CFrame.new(focus)
+    end
+    layoutClock = layoutClock + dt
+    if layoutClock < 0.1 then return end
+    layoutClock = 0
+    configureLayout()
+    if validEnemy(selectedEnemy) then
+        targetFrame.Visible = not panelOpen
+        local enemyType = Config.Enemies[selectedEnemy:GetAttribute("EnemyType")]
+        targetName.Text = enemyType and enemyType.name or selectedEnemy.Name
+        targetHealth.Text = math.ceil(selectedEnemy:GetAttribute("Health") or 0) .. " / " .. tostring(selectedEnemy:GetAttribute("MaxHealth") or 0) .. " VIDA"
+    else
+        if selectedEnemy then setTarget(nil) end
+        targetFrame.Visible = false
+    end
+    local now = os.clock()
+    basicButton.Text = cooldowns.basic > now and "ATACAR\n" .. string.format("%.1fs", cooldowns.basic - now) or "ATACAR\nClique / toque"
+    cleaveButton.Text = cooldowns.cleave > now and "CORTE\n" .. string.format("%.1fs", cooldowns.cleave - now) or "Q  •  CORTE\nEm área"
+    local potions = snapshot and snapshot.inventory and snapshot.inventory.potion or 0
+    potionButton.Text = cooldowns.potion > now and "POÇÃO\n" .. string.format("%.1fs", cooldowns.potion - now) or "R  •  POÇÃO\n×" .. tostring(potions)
+end)
+
+-- Feedback de dano apenas visual, baseado na vida replicada pelo servidor.
+local function observeEnemy(enemy)
+    if not enemy:IsA("Model") then return end
+    local previous = enemy:GetAttribute("Health") or 0
+    enemy:GetAttributeChangedSignal("Health"):Connect(function()
+        local current = enemy:GetAttribute("Health") or 0
+        local damage = previous - current
+        previous = current
+        local root = characterParts()
+        if damage <= 0 or not root or not enemy.PrimaryPart or (root.Position - enemy.PrimaryPart.Position).Magnitude > 100 then return end
+        local popup = create("BillboardGui", enemy.PrimaryPart, {Size = UDim2.fromOffset(80, 40), StudsOffsetWorldSpace = Vector3.new(0, 5, 0), AlwaysOnTop = true, MaxDistance = 100})
+        local number = label(popup, "−" .. tostring(math.ceil(damage)), {Size = UDim2.fromScale(1, 1), TextSize = 23, Font = Enum.Font.GothamBold, TextColor3 = palette.gold, TextXAlignment = Enum.TextXAlignment.Center, TextStrokeTransparency = 0.4})
+        TweenService:Create(popup, TweenInfo.new(0.8), {StudsOffsetWorldSpace = Vector3.new(0, 8, 0)}):Play()
+        TweenService:Create(number, TweenInfo.new(0.8), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
+        Debris:AddItem(popup, 0.9)
+    end)
+end
+local enemies = world:WaitForChild("Enemies")
+for _, enemy in ipairs(enemies:GetChildren()) do observeEnemy(enemy) end
+enemies.ChildAdded:Connect(observeEnemy)
+configureLayout()
+task.spawn(function()
+    for _ = 1, 30 do
+        if snapshot then break end
+        local ok, result = pcall(function() return GetState:InvokeServer() end)
+        if ok and type(result) == "table" then acceptState(result) break end
+        task.wait(1)
+    end
+    if snapshot then
+        toast("Bem-vindo a Brumavale! Use E para interagir e I para abrir sua mochila.")
+    else
+        toast("O perfil ainda não carregou. Confira o Output do servidor.")
+    end
+end)
+]=]
+
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local ServerStorage = game:GetService("ServerStorage")
+local StarterScripts = game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
+local ChangeHistoryService = game:GetService("ChangeHistoryService")
+local targets = {
+    {parent=ReplicatedStorage,name="Brumavale"},
+    {parent=ServerScriptService,name="Brumavale"},
+    {parent=StarterScripts,name="BrumavaleClient"},
+    {parent=workspace,name="BrumavaleWorld"},
+}
+-- Refuse to overwrite an unrelated object with a matching name.
+for _, target in ipairs(targets) do
+    local existing = target.parent:FindFirstChild(target.name)
+    assert(not existing or existing:GetAttribute("BrumavaleGenerated") == true,
+        "Objeto não reconhecido: " .. target.parent.Name .. "." .. target.name .. ". Renomeie-o antes de instalar.")
+end
+local backup = Instance.new("Folder")
+backup.Name = "BrumavaleBackup_" .. os.date("%Y%m%d_%H%M%S")
+backup:SetAttribute("BrumavaleGenerated",true)
+backup.Parent = ServerStorage
+local previous = {}
+local created = {}
+local function make(class, name, parent, source)
+    local object = Instance.new(class)
+    object.Name = name
+    object:SetAttribute("BrumavaleGenerated",true)
+    if object:IsA("Script") then object.Disabled = true end
+    if source then object.Source = source end
+    object.Parent = parent
+    table.insert(created, object)
+    return object
+end
+pcall(function() ChangeHistoryService:SetWaypoint("Antes de instalar Brumavale") end)
+local ok, problem = xpcall(function()
+    for i, target in ipairs(targets) do
+        local existing = target.parent:FindFirstChild(target.name)
+        if existing then
+            local slot = Instance.new("Folder")
+            slot.Name = tostring(i) .. "_" .. target.parent.Name
+            slot.Parent = backup
+            table.insert(previous,{object=existing,parent=target.parent})
+            existing.Parent = slot
+        end
+    end
+    local shared = make("Folder","Brumavale",ReplicatedStorage)
+    shared:SetAttribute("Version",1)
+    make("ModuleScript","Config",shared,Sources.Config)
+    make("RemoteEvent","Action",shared)
+    make("RemoteEvent","State",shared)
+    make("RemoteFunction","GetState",shared)
+    local server = make("Folder","Brumavale",ServerScriptService)
+    make("ModuleScript","Economy",server,Sources.Economy)
+    make("ModuleScript","Profiles",server,Sources.Profiles)
+    local worldModule = make("ModuleScript","World",server,Sources.World)
+    local main = make("Script","Main",server,Sources.Main)
+    make("LocalScript","BrumavaleClient",StarterScripts,Sources.Client)
+    local world = require(worldModule).Build()
+    assert(world and world.Parent == workspace,"A geração do mapa não retornou um mundo válido.")
+    world:SetAttribute("BrumavaleGenerated",true)
+    assert(world:FindFirstChild("TownSpawn",true),"Spawn não gerado.")
+    main.Disabled = false
+end, debug.traceback)
+if not ok then
+    local world = workspace:FindFirstChild("BrumavaleWorld")
+    if world and world:GetAttribute("BrumavaleGenerated") then world:Destroy() end
+    for i = #created, 1, -1 do created[i]:Destroy() end
+    for _, record in ipairs(previous) do record.object.Parent = record.parent end
+    backup:Destroy()
+    error("Instalação revertida. " .. tostring(problem),0)
+end
+if #previous == 0 then backup:Destroy() end
+pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
+print("BRUMAVALE instalado! Pressione Play. I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
+print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
+print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")
+if #previous > 0 then print("Instalação anterior preservada em ServerStorage/" .. backup.Name) end

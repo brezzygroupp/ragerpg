@@ -1,0 +1,149 @@
+local ConfigSource = __CONFIG_SOURCE__
+local EconomySource = __ECONOMY_SOURCE__
+local ProfilesSource = __PROFILES_SOURCE__
+
+local function loadModule(source, name, environment)
+	local chunk, message = loadstring(source, "@" .. name)
+	assert(chunk, message)
+	if environment then setfenv(chunk, setmetatable(environment, {__index=getfenv()})) end
+	return chunk()
+end
+
+local Config = loadModule(ConfigSource, "Config")
+local Economy = loadModule(EconomySource, "Economy", {script=nil, require=function() return Config end})
+local records, failures, calls = {}, {}, {}
+
+local function copy(value)
+	if type(value) ~= "table" then return value end
+	local result = {}
+	for key, item in pairs(value) do result[key] = copy(item) end
+	return result
+end
+
+local store = {}
+function store:UpdateAsync(key, transform)
+	calls[key] = (calls[key] or 0) + 1
+	if failures[key] then error("simulated datastore failure") end
+	local nextValue = transform(copy(records[key]))
+	if nextValue == nil then return nil end
+	records[key] = copy(nextValue)
+	return copy(nextValue)
+end
+
+local guid = 0
+local DataStoreService = {GetDataStore=function() return store end}
+local HttpService = {GenerateGUID=function()
+	guid += 1
+	return "test-guid-" .. tostring(guid)
+end}
+local RunService = {IsStudio=function() return false end}
+local configModule, economyModule = {value=Config}, {value=Economy}
+local shared = {WaitForChild=function(_, name) assert(name == "Config"); return configModule end}
+local ReplicatedStorage = {WaitForChild=function(_, name) assert(name == "Brumavale"); return shared end}
+local scriptMock = {Parent={WaitForChild=function(_, name) assert(name == "Economy"); return economyModule end}}
+local fakeTask = {wait=function() end, spawn=function(callback, ...)
+	return callback(...)
+end}
+
+local function loadProfiles(jobId)
+	local gameMock = {JobId=jobId}
+	function gameMock:GetService(name)
+		local services = {
+			DataStoreService=DataStoreService, HttpService=HttpService,
+			RunService=RunService, ReplicatedStorage=ReplicatedStorage,
+		}
+		return assert(services[name], name)
+	end
+	return loadModule(ProfilesSource, "Profiles", {
+		game=gameMock, script=scriptMock, task=fakeTask, warn=function() end,
+		require=function(module) return module.value end,
+	})
+end
+
+local passed = 0
+local function test(name, callback)
+	local ok, message = pcall(callback)
+	assert(ok, name .. ": " .. tostring(message))
+	passed += 1
+	print("PASS " .. name)
+end
+local function player(userId)
+	return {UserId=userId, Parent={}}
+end
+local function fingerprint(value)
+	if type(value) ~= "table" then return tostring(value) end
+	local keys = {}
+	for key in pairs(value) do table.insert(keys, key) end
+	table.sort(keys, function(a,b) return tostring(a)<tostring(b) end)
+	local result = {}
+	for _,key in ipairs(keys) do table.insert(result,tostring(key).."="..fingerprint(value[key])) end
+	return "{"..table.concat(result,",").."}"
+end
+
+test("new profile acquires a persistent lease", function()
+	local Profiles, user = loadProfiles("job-a"), player(1)
+	local profile = assert(Profiles.Load(user))
+	assert(profile.silver == Config.StartingSilver)
+	assert(Profiles.IsPersistent(user))
+	assert(records["player:1"].lease.owner:find("job%-a"))
+end)
+
+test("active lease rejects a second server without changing data", function()
+	local before = fingerprint(records["player:1"])
+	local Profiles = loadProfiles("job-b")
+	local profile = Profiles.Load(player(1))
+	assert(profile == nil)
+	assert(fingerprint(records["player:1"]) == before)
+end)
+
+test("save persists a snapshot and release removes the lease", function()
+	local Profiles, user = loadProfiles("job-save"), player(2)
+	local profile = assert(Profiles.Load(user))
+	profile.silver = 432
+	profile.inventory.wood = 7
+	assert(Profiles.Save(user))
+	assert(records["player:2"].data.silver == 432 and records["player:2"].data.inventory.wood == 7)
+	assert(records["player:2"].lease ~= nil)
+	assert(Profiles.Remove(user))
+	assert(records["player:2"].lease == nil)
+end)
+
+test("unsold escrow is recovered once on the next load", function()
+	local data = Economy.NewProfile()
+	data.marketEscrow = {offer={item="wood",count=3}}
+	records["player:3"] = {schema=1,data=data,updatedAt=os.time()}
+	local Profiles, user = loadProfiles("job-recover"), player(3)
+	local profile = assert(Profiles.Load(user))
+	assert(profile.inventory.wood == 3)
+	assert(next(profile.marketEscrow) == nil)
+	assert(records["player:3"].data.inventory.wood == 3)
+	assert(next(records["player:3"].data.marketEscrow) == nil)
+end)
+
+test("load failure never creates fallback data", function()
+	failures["player:4"] = true
+	local Profiles = loadProfiles("job-fail")
+	assert(Profiles.Load(player(4)) == nil)
+	assert(records["player:4"] == nil and calls["player:4"] == 3)
+	failures["player:4"] = nil
+end)
+
+test("malformed stored profile is refused without overwrite", function()
+	records["player:5"] = {schema=1,data={silver="invalid",xp=0,inventory={}}}
+	local before = fingerprint(records["player:5"])
+	local Profiles = loadProfiles("job-malformed")
+	assert(Profiles.Load(player(5)) == nil)
+	assert(fingerprint(records["player:5"]) == before)
+end)
+
+test("lost ownership prevents save and release", function()
+	local Profiles, user = loadProfiles("job-owner"), player(6)
+	local profile = assert(Profiles.Load(user))
+	profile.silver = 999
+	records["player:6"].lease = {owner="another-server",expires=os.time()+300}
+	assert(Profiles.Remove(user) == false)
+	assert(records["player:6"].lease.owner == "another-server")
+	assert(records["player:6"].data.silver ~= 999)
+end)
+
+print(string.format("%d profile persistence tests passed", passed))

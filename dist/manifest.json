@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "sources": {
+    "src/shared/Config.lua": "d00ab5a5e6b614064112fa72bac0687eb98dd99e1670cf9b0ef87248585fdf7a",
+    "src/server/Economy.lua": "bba2cef0c28ba2697efe80ea29fb4324b686b68cd95d4d6feda91aaffaa8f29f",
+    "src/server/Profiles.lua": "0271505a424667b62d89988c80f35d00ae3fc91ac08510db7843c5cbc2887e2e",
+    "src/server/World.lua": "866fd85c58cda6e46e4051f39cb5a45fb55345ffb82dad1281d4680734085984",
+    "src/server/Main.server.lua": "dbce17871c807a2476eeca4fc1cdacd8ebecbe3a2e0e5a717e997d1d922a76be",
+    "src/client/Client.client.lua": "19ad3517e9fc13db17fa2e362dfdb4f2bc97b80420a702f493a811c90c4543c0"
+  }
+}
