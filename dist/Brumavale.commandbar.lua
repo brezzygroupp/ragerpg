@@ -2250,13 +2250,43 @@ RunService.Heartbeat:Connect(function(dt)
 		local attackDefinition = record.config.attack or {range=5.5}
 		local attackRange = attackDefinition.range or attackDefinition.radius or 5.5
 		local stopDistance = targetRoot and math.max(3.2, math.min(attackRange * 0.82, attackRange - 0.35)) or 0.5
-		if flat.Magnitude > stopDistance then
-			local advance = flat.Unit * math.min(flat.Magnitude, record.config.speed * step)
-			local nextPosition = model:GetPivot().Position + advance
-			model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + flat.Unit))
-		elseif targetHumanoid and now >= (record.nextAttack or 0) and lineOfSight(target.Character, model) then
-			startMonsterAttack(record, targetRoot, now)
-		end
+        -- Attack first: an enemy already within its attack radius should not
+        -- freeze indefinitely while trying to move toward the exact same point.
+        local inRange = targetRoot ~= nil and flat.Magnitude <= attackRange
+        if targetHumanoid and inRange and now >= (record.nextAttack or 0)
+            and lineOfSight(target.Character, model) then
+            startMonsterAttack(record, targetRoot, now)
+        else
+            -- Soft separation keeps enemies from occupying each other's space.
+            -- All models are anchored, so Roblox physics cannot separate them.
+            local push = Vector3.zero
+            local neighbors = 0
+            for otherModel, other in pairs(mobs) do
+                if other ~= record and other.health > 0 and otherModel.PrimaryPart then
+                    local difference = position - otherModel.PrimaryPart.Position
+                    local horizontal = Vector3.new(difference.X, 0, difference.Z)
+                    local distance = horizontal.Magnitude
+                    local clearance = 7
+                    if distance < clearance then
+                        if distance < 0.1 then
+                            local angle = (#model.Name * 1.91 + #otherModel.Name * 0.61)
+                            horizontal = Vector3.new(math.cos(angle), 0, math.sin(angle))
+                            distance = 1
+                        end
+                        push += horizontal.Unit * ((clearance - distance) / clearance)
+                        neighbors += 1
+                    end
+                end
+            end
+            if neighbors > 0 then push = push / math.sqrt(neighbors) end
+            local seek = flat.Magnitude > stopDistance and flat.Unit or Vector3.zero
+            local desired = seek + push * 1.9
+            if desired.Magnitude > 0.02 then
+                local velocity = desired.Unit * math.min(record.config.speed * step, math.max(0.5, flat.Magnitude))
+                local nextPosition = model:GetPivot().Position + velocity
+                model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + desired.Unit))
+            end
+        end
 		poseEnemy(record, now, flat.Magnitude > stopDistance, target and nearest or math.huge)
 		if not target and (model:GetPivot().Position - record.home.Position).Magnitude < 1 and record.health < record.config.health then
 			record.health = record.config.health
