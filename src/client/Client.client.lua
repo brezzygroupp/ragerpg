@@ -766,24 +766,118 @@ local function itemDetails(id)
     if item.heal then details = details .. "  •  +" .. item.heal .. " vida" end
     return details
 end
+-- Albion-inspired inventory composition: equipment left, item grid right.
+-- Drag-and-drop equips on the server; local rearrangement is cosmetic only.
+local inventoryPositions = {}
+local dragState = nil
+local function inventoryColor(id)
+    local item = Config.Items[id]
+    if not item then return palette.muted end
+    if item.tier >= 3 then return Color3.fromRGB(157, 115, 222) end
+    if item.tier == 2 then return Color3.fromRGB(92, 157, 204) end
+    return palette.gold
+end
+local function within(point, guiObject)
+    if not guiObject or not guiObject.Parent then return false end
+    local origin, size = guiObject.AbsolutePosition, guiObject.AbsoluteSize
+    return point.X >= origin.X and point.Y >= origin.Y and point.X <= origin.X + size.X and point.Y <= origin.Y + size.Y
+end
+local equipTargets = {}
 local function showInventory()
-    pageTitle.Text = "Sua mochila"
-    pageHint.Text = "Selecione equipamentos para vestir. Vendas exigem proximidade do mercador; anúncios, do mercado."
-    local inventory = snapshot.inventory or {}
-    local ids = sortedItems(function(id) return (inventory[id] or 0) > 0 end)
-    if #ids == 0 then row(1, "Mochila vazia", "Colete recursos nas regiões próximas à cidade.", "·", palette.muted) end
-    for index, id in ipairs(ids) do
-        local equipped = snapshot.equipment and (snapshot.equipment.weapon == id or snapshot.equipment.armor == id)
-        row(index, itemName(id) .. " ×" .. tostring(inventory[id]), itemDetails(id) .. (equipped and "  •  equipado" or ""), itemSymbols[id], equipped and palette.teal or palette.gold, "Selecionar", function() selectedItem = id renderPage() end, selectedItem == id)
+    pageTitle.Text = "Equipamento e inventário"
+    pageHint.Text = "Arraste armas ou armaduras para equipar. Arraste itens entre espaços para organizar a mochila."
+    expandBody()
+    body.ScrollingEnabled = false
+    body.CanvasSize = UDim2.new()
+    local contents = frame(body, {Size=UDim2.new(1, -6, 0, 322), BackgroundColor3=palette.panel, LayoutOrder=1, ZIndex=12})
+    local equipment = frame(contents, {Position=UDim2.fromOffset(9, 9), Size=UDim2.fromOffset(220, 303), BackgroundColor3=palette.ink, ZIndex=13})
+    label(equipment, "EQUIPAMENTO", {Position=UDim2.fromOffset(12, 8), Size=UDim2.fromOffset(192, 20), TextSize=12, Font=Enum.Font.GothamBold, TextColor3=palette.gold, ZIndex=14})
+    label(equipment, "AVENTUREIRO", {Position=UDim2.fromOffset(12, 31), Size=UDim2.fromOffset(192, 15), TextSize=10, TextColor3=palette.muted, ZIndex=14})
+    local itemCount = snapshot.inventory or {}
+    equipTargets = {}
+    local function makeSlot(parent, id, title, itemId, position, size)
+        local tile = button(parent, "", {Position=position, Size=size, BackgroundColor3=palette.raised, Text="", ZIndex=15}, function()
+            if id and id ~= "" then selectedItem=id end
+        end)
+        stroke(tile, itemId and inventoryColor(itemId) or palette.edge)
+        label(tile, title, {Position=UDim2.fromOffset(6, 5), Size=UDim2.new(1,-12,0,15), TextSize=9, TextColor3=palette.muted, ZIndex=16})
+        if itemId then
+            label(tile, itemSymbols[itemId] or "◇", {Position=UDim2.fromOffset(6, 19), Size=UDim2.fromOffset(35,32), TextSize=21, Font=Enum.Font.GothamBold, TextColor3=inventoryColor(itemId), ZIndex=16})
+            label(tile, itemName(itemId), {Position=UDim2.fromOffset(45,20), Size=UDim2.new(1,-49,0,31), TextSize=10, TextWrapped=true, ZIndex=16})
+        end
+        return tile
     end
-    local item = Config.Items[selectedItem]
-    footerTitle.Text = item and item.name or "Selecione um item"
-    footerHint.Text = item and ("Venda: " .. tostring(item.sell or 0) .. " prata/un.  •  Peso: " .. tostring(item.weight or 0) .. "  •  Dano " .. tostring(snapshot.damage or 0) .. " / Defesa " .. tostring(snapshot.defense or 0)) or ""
-    footerAction(item and item.kind == "consumable" and "Usar" or "Equipar", function()
-        if item and item.kind == "consumable" then send("use", {item = selectedItem}) else send("equip", {item = selectedItem}) end
-    end, palette.teal, 3)
-    footerAction("Vender", function() send("sell", {item = selectedItem, count = quantity()}) end, palette.gold, 3)
-    footerAction("Anunciar", function() openPanel("market") end, palette.text, 3)
+    local eq = snapshot.equipment or {}
+    equipTargets.weapon = makeSlot(equipment, eq.weapon, "ARMA", eq.weapon, UDim2.fromOffset(12, 59), UDim2.fromOffset(196, 62))
+    equipTargets.armor = makeSlot(equipment, eq.armor, "ARMADURA", eq.armor, UDim2.fromOffset(12, 128), UDim2.fromOffset(196, 62))
+    label(equipment, "DANO  " .. tostring(snapshot.damage or 0) .. "   |   DEFESA  " .. tostring(snapshot.defense or 0), {Position=UDim2.fromOffset(12,209), Size=UDim2.fromOffset(195,25), TextSize=10, TextColor3=palette.teal, ZIndex=14})
+    label(equipment, "Arraste o item da mochila\npara o espaço correspondente.", {Position=UDim2.fromOffset(12,240), Size=UDim2.fromOffset(195,43), TextSize=10, TextWrapped=true, TextColor3=palette.muted, ZIndex=14})
+    local bag = frame(contents, {Position=UDim2.fromOffset(240,9), Size=UDim2.new(1,-249,1,-18), BackgroundColor3=palette.ink, ZIndex=13})
+    label(bag, "MOCHILA", {Position=UDim2.fromOffset(10,6), Size=UDim2.new(1,-20,0,21), TextSize=12, Font=Enum.Font.GothamBold, TextColor3=palette.gold, ZIndex=14})
+    label(bag, "Peso " .. tostring(math.floor((snapshot.weight or 0)*10)/10) .. " / " .. tostring(Config.Capacity), {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-10,0,8), Size=UDim2.fromOffset(125,17), TextSize=10, TextXAlignment=Enum.TextXAlignment.Right, TextColor3=palette.muted, ZIndex=14})
+    local columns, cell, gap = 8, 51, 5
+    local grid = frame(bag, {Position=UDim2.fromOffset(10,34), Size=UDim2.new(1,-20,1,-43), BackgroundTransparency=1, ZIndex=14})
+    local ids = sortedItems(function(id) return (itemCount[id] or 0)>0 end)
+    local order = {}
+    for _, id in ipairs(ids) do
+        local pos = inventoryPositions[id]
+        if pos and pos >= 1 and pos <= 40 and not order[pos] then order[pos]=id end
+    end
+    for _, id in ipairs(ids) do
+        local found=false
+        for _, occupied in pairs(order) do if occupied==id then found=true break end end
+        if not found then for i=1,40 do if not order[i] then order[i]=id break end end end
+    end
+    local slotObjects = {}
+    for i=1,40 do
+        local id=order[i]
+        local col,rowIndex=(i-1)%columns, math.floor((i-1)/columns)
+        local tile=button(grid,"",{Position=UDim2.fromOffset(col*(cell+gap),rowIndex*(cell+gap)),Size=UDim2.fromOffset(cell,cell),BackgroundColor3=palette.raised,Text="",ZIndex=15},function()
+            if id then selectedItem=id end
+        end)
+        slotObjects[i]=tile
+        if id then
+            stroke(tile,inventoryColor(id))
+            label(tile,itemSymbols[id] or "◆",{Position=UDim2.fromOffset(1,2),Size=UDim2.fromOffset(cell-2,27),TextSize=20,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Center,TextColor3=inventoryColor(id),ZIndex=16})
+            label(tile,tostring(itemCount[id]),{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-4,1,-3),Size=UDim2.fromOffset(28,15),TextSize=10,TextXAlignment=Enum.TextXAlignment.Right,Font=Enum.Font.GothamBold,ZIndex=16})
+            tile.InputBegan:Connect(function(input)
+                if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+                    dragState={item=id,slot=i,origin=input.Position,targets=equipTargets,slots=slotObjects}
+                end
+            end)
+        end
+    end
+    -- One-shot global pointer release avoids repeated connections every refresh.
+    local connection
+    connection=UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType~=Enum.UserInputType.MouseButton1 and input.UserInputType~=Enum.UserInputType.Touch then return end
+        if connection then connection:Disconnect() end
+        local dragging=dragState
+        dragState=nil
+        if not dragging or not panelOpen or activeTab~="inventory" then return end
+        local point=Vector2.new(input.Position.X,input.Position.Y)
+        local kind=Config.Items[dragging.item] and Config.Items[dragging.item].kind
+        if kind=="weapon" and within(point,equipTargets.weapon) or kind=="armor" and within(point,equipTargets.armor) then
+            send("equip",{item=dragging.item})
+            return
+        end
+        for index,slot in ipairs(slotObjects) do
+            if within(point,slot) and index~=dragging.slot then
+                local occupant=order[index]
+                if occupant then inventoryPositions[occupant]=dragging.slot end
+                inventoryPositions[dragging.item]=index
+                renderPage()
+                return
+            end
+        end
+        if within(point,dragging.slots[dragging.slot]) then
+            selectedItem=dragging.item
+            renderPage()
+        end
+    end)
+    local item=Config.Items[selectedItem]
+    if not item or (itemCount[selectedItem] or 0)==0 then selectedItem=ids[1] or "sword1";item=Config.Items[selectedItem] end
+    label(contents,"Selecionado: "..(item and item.name or "nenhum").."   •   "..(item and itemDetails(selectedItem) or ""),{Position=UDim2.fromOffset(250,274),Size=UDim2.new(1,-260,0,28),TextSize=10,TextColor3=palette.teal,ZIndex=15})
 end
 local function showCraft()
     pageTitle.Text = "Forja & oficina"
@@ -866,6 +960,7 @@ renderPage = function()
     local scroll = body.CanvasPosition
     clearList(body)
     resetFooter()
+    body.ScrollingEnabled = true
     for id, tab in pairs(tabButtons) do
         tab.BackgroundColor3 = id == activeTab and palette.gold or palette.raised
         tab.TextColor3 = id == activeTab and palette.ink or palette.text
