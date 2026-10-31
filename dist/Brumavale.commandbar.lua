@@ -889,7 +889,9 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.75, 0.45, 0.2), pos + Vector3.new(x * 0.8, 10.2, -1.6), C.teal, Enum.Material.Neon))
         end
     else
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), (kind == "knight" and Color3.fromRGB(56,74,102) or Color3.fromRGB(105,62,68))))
+        local armorColor = kind == "knight" and Color3.fromRGB(56, 74, 102) or Color3.fromRGB(105, 62, 68)
+        local rootPart = part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), armorColor)
+        m.PrimaryPart = noCollision(rootPart)
         noCollision(part(m, "Head", Vector3.new(1.8, 1.8, 1.8), pos + Vector3.new(0, 6.3, 0), Color3.fromRGB(196, 156, 118)))
         noCollision(part(m, "Hood", Vector3.new(2, 0.7, 2), pos + Vector3.new(0, 7.35, 0), C.darkStone))
         noCollision(part(m, "Mask", Vector3.new(1.9, 0.7, 0.3), pos + Vector3.new(0, 5.95, -0.95), C.darkStone))
@@ -3123,7 +3125,7 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE v4 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
+print("BRUMAVALE v4.1 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
 print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")
