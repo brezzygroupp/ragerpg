@@ -260,6 +260,60 @@ local function enemy(parent, kind, pos, index)
         end
         noCollision(part(m, "Blade", Vector3.new(0.35, 4, 0.65), pos + Vector3.new(2.4, 4, -0.5), C.stone, Enum.Material.Metal))
     end
+
+    -- Distinct silhouettes and readable weak-point accents, entirely offline.
+    local function ornament(name, size, offset, color, material, shape)
+        local p = noCollision(part(m, name, size, pos + offset, color, material or Enum.Material.SmoothPlastic, shape))
+        p.CanTouch = false
+        p.CanQuery = false
+        return p
+    end
+    if kind == "boar" then
+        for _, x in ipairs({-1, 1}) do
+            ornament("Tusk", Vector3.new(0.65, 1.6, 0.65), Vector3.new(x * 0.85, 2.9, -4.45), C.cream)
+            ornament("Bristle", Vector3.new(0.55, 1.65, 0.7), Vector3.new(x * 0.55, 4.25, -0.7), C.wood)
+        end
+        ornament("Snout", Vector3.new(2.1, 1.2, 0.7), Vector3.new(0, 3, -4.7), Color3.fromRGB(153, 98, 90))
+    elseif kind == "scorpion" then
+        for side = -1, 1 do
+            for index = 1, 4 do
+                ornament("ScorpionLeg", Vector3.new(2.7, 0.4, 0.55), Vector3.new(side * 2.35, 1.7, (index-2.5)*1.1), Color3.fromRGB(116,48,44))
+            end
+            ornament("Claw", Vector3.new(2, 1, 1.5), Vector3.new(side * 2.7, 2, -3.8), Color3.fromRGB(192,81,61))
+        end
+        ornament("Stinger", Vector3.new(0.9, 4.5, 0.9), Vector3.new(0, 5.6, 3.1), Color3.fromRGB(191,76,53))
+        ornament("StingerTip", Vector3.new(0.8, 1.4, 0.8), Vector3.new(0, 8, 3.4), C.ink)
+    elseif kind == "wolf" or kind == "icewolf" then
+        local fur = kind == "icewolf" and Color3.fromRGB(221,237,246) or Color3.fromRGB(86,105,111)
+        for side = -1, 1 do
+            ornament("FurTuft", Vector3.new(1.1, 1.45, 1.2), Vector3.new(side * 1.25, 3.4, -1.2), fur)
+            ornament("Fang", Vector3.new(0.3, 0.8, 0.3), Vector3.new(side * 0.65, 2.8, -4.5), C.cream)
+        end
+    elseif kind == "bogling" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("MireSpike", Vector3.new(0.6, 2.2, 0.6), Vector3.new(math.cos(angle)*1.3, 3.15, math.sin(angle)*1.3), Color3.fromRGB(47,91,59))
+        end
+    elseif kind == "wisp" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("SpiritFlame", Vector3.new(0.85, 2.7, 0.85), Vector3.new(math.cos(angle)*2.1, 2.6, math.sin(angle)*2.1), Color3.fromRGB(140,232,255), Enum.Material.Neon, Enum.PartType.Ball)
+        end
+    elseif kind == "guardian" or kind == "ashgolem" or kind == "ancient" then
+        local glow = kind == "ashgolem" and Color3.fromRGB(255,110,54) or kind == "ancient" and Color3.fromRGB(196,126,255) or C.teal
+        for side = -1, 1 do
+            ornament("ShoulderPlate", Vector3.new(3.3, 2.1, 3), Vector3.new(side*3.8, 8, 0), C.darkStone, Enum.Material.Slate)
+            ornament("ArmRune", Vector3.new(0.5, 2.3, 0.3), Vector3.new(side*4, 5.7, -1.15), glow, Enum.Material.Neon)
+        end
+        ornament("HeartRune", Vector3.new(2.3, 2.8, 0.35), Vector3.new(0, 6, -2.1), glow, Enum.Material.Neon)
+        if kind == "ancient" then
+            for side = -1, 1 do ornament("CrownHorn", Vector3.new(1.1, 4, 1.1), Vector3.new(side*1.45, 12.6, 0), C.darkStone, Enum.Material.Slate) end
+        end
+    elseif kind == "knight" or kind == "bandit" then
+        ornament("Breastplate", Vector3.new(3.1, 2.6, 0.45), Vector3.new(0, 4.05, -1.15), kind == "knight" and C.stone or C.wood, Enum.Material.Metal)
+        ornament("Pauldron", Vector3.new(1.65, 1.2, 1.8), Vector3.new(1.85, 5.1, 0), C.darkStone, Enum.Material.Metal)
+        if kind == "knight" then ornament("HelmetCrest", Vector3.new(0.5, 1, 2.2), Vector3.new(0, 7.6, 0), C.gold, Enum.Material.Metal) end
+    end
     m:SetAttribute("EnemyType", kind)
     m:SetAttribute("Health", def.health)
     m:SetAttribute("MaxHealth", def.health)
