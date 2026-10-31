@@ -444,12 +444,61 @@ local function animateMonsterAttack(record, now)
 	if now >= attackState.resolves then resolveMonsterAttack(record) end
 end
 
+
+-- Each anchored enemy has a lightweight procedural rig: relative part poses
+-- are evaluated after movement. No uploaded animations or external assets.
+local function captureEnemyRig(model)
+    local rest = {}
+    local pivot = model:GetPivot()
+    for _, item in ipairs(model:GetDescendants()) do
+        if item:IsA("BasePart") and item ~= model.PrimaryPart then
+            table.insert(rest, {part=item, offset=pivot:ToObjectSpace(item.CFrame), name=item.Name})
+        end
+    end
+    return rest
+end
+
+local function poseEnemy(record, now, moving, distance)
+    if distance > 120 and not record.attack then return end
+    local model = record.model
+    if not model.PrimaryPart then return end
+    local state = model:GetAttribute("AttackState")
+    local attacking = state == "Windup" or state == "Impact"
+    local rate = record.config.speed > 12 and 9 or 6
+    local phase = now * rate + record.phase
+    local intensity = moving and 1 or 0.12
+    local rise = math.sin(phase * 2) * (moving and 0.13 or 0.05)
+    local attackWave = attacking and math.sin(now * 18) * 0.24 or 0
+    local root = model:GetPivot()
+    for _, joint in ipairs(record.rig) do
+        local p = joint.part
+        if p.Parent then
+            local name = joint.name
+            local transform = CFrame.new(0, rise, 0)
+            if name == "Leg" or name == "ScorpionLeg" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and 0 or math.pi)) * 0.26 * intensity, 0, 0)
+            elseif name == "Arm" or name == "Claw" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and math.pi or 0)) * 0.24 * intensity - attackWave, 0, side * attackWave)
+            elseif name == "Tail" or name == "Stinger" or name == "StingerTip" then
+                transform = transform * CFrame.Angles(math.sin(phase * 0.6) * 0.15, math.sin(phase * 0.7) * 0.25, 0)
+            elseif name == "Head" or name == "HelmetCrest" or name == "CrownHorn" or name == "Hood" or name == "Mask" then
+                transform = transform * CFrame.Angles(-attackWave * 0.7, math.sin(phase * 0.35) * 0.08, 0)
+            elseif name == "SpiritFlame" or name == "MireSpike" then
+                transform = transform * CFrame.new(0, math.sin(phase + joint.offset.Position.X) * 0.4, 0)
+            end
+            p.CFrame = root * joint.offset * transform
+        end
+    end
+end
+
 for _, model in ipairs(world.Enemies:GetChildren()) do
 	local config = Config.Enemies[model:GetAttribute("EnemyType")]
 	if model:IsA("Model") and model.PrimaryPart and config then
 		local record = {
 			model=model, config=config, health=config.health, home=model:GetPivot(),
-			appearance=savedAppearance(model), nextAttack=0, attack=nil, target=nil,
+			appearance=savedAppearance(model), rig=captureEnemyRig(model), phase=#model.Name * 0.71, nextAttack=0, attack=nil, target=nil,
 		}
 		mobs[model] = record
 		model:SetAttribute("Alive", true)
@@ -829,6 +878,7 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		if record.attack then
 			animateMonsterAttack(record, now)
+			poseEnemy(record, now, false, 0)
 			continue
 		end
 		local position = model.PrimaryPart.Position
@@ -858,6 +908,7 @@ RunService.Heartbeat:Connect(function(dt)
 		elseif targetHumanoid and now >= (record.nextAttack or 0) and lineOfSight(target.Character, model) then
 			startMonsterAttack(record, targetRoot, now)
 		end
+		poseEnemy(record, now, flat.Magnitude > stopDistance, target and nearest or math.huge)
 		if not target and (model:GetPivot().Position - record.home.Position).Magnitude < 1 and record.health < record.config.health then
 			record.health = record.config.health
 			updateEnemyLabel(record)
