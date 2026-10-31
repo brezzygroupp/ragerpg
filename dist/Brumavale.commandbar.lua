@@ -901,6 +901,60 @@ local function enemy(parent, kind, pos, index)
         end
         noCollision(part(m, "Blade", Vector3.new(0.35, 4, 0.65), pos + Vector3.new(2.4, 4, -0.5), C.stone, Enum.Material.Metal))
     end
+
+    -- Distinct silhouettes and readable weak-point accents, entirely offline.
+    local function ornament(name, size, offset, color, material, shape)
+        local p = noCollision(part(m, name, size, pos + offset, color, material or Enum.Material.SmoothPlastic, shape))
+        p.CanTouch = false
+        p.CanQuery = false
+        return p
+    end
+    if kind == "boar" then
+        for _, x in ipairs({-1, 1}) do
+            ornament("Tusk", Vector3.new(0.65, 1.6, 0.65), Vector3.new(x * 0.85, 2.9, -4.45), C.cream)
+            ornament("Bristle", Vector3.new(0.55, 1.65, 0.7), Vector3.new(x * 0.55, 4.25, -0.7), C.wood)
+        end
+        ornament("Snout", Vector3.new(2.1, 1.2, 0.7), Vector3.new(0, 3, -4.7), Color3.fromRGB(153, 98, 90))
+    elseif kind == "scorpion" then
+        for side = -1, 1 do
+            for index = 1, 4 do
+                ornament("ScorpionLeg", Vector3.new(2.7, 0.4, 0.55), Vector3.new(side * 2.35, 1.7, (index-2.5)*1.1), Color3.fromRGB(116,48,44))
+            end
+            ornament("Claw", Vector3.new(2, 1, 1.5), Vector3.new(side * 2.7, 2, -3.8), Color3.fromRGB(192,81,61))
+        end
+        ornament("Stinger", Vector3.new(0.9, 4.5, 0.9), Vector3.new(0, 5.6, 3.1), Color3.fromRGB(191,76,53))
+        ornament("StingerTip", Vector3.new(0.8, 1.4, 0.8), Vector3.new(0, 8, 3.4), C.ink)
+    elseif kind == "wolf" or kind == "icewolf" then
+        local fur = kind == "icewolf" and Color3.fromRGB(221,237,246) or Color3.fromRGB(86,105,111)
+        for side = -1, 1 do
+            ornament("FurTuft", Vector3.new(1.1, 1.45, 1.2), Vector3.new(side * 1.25, 3.4, -1.2), fur)
+            ornament("Fang", Vector3.new(0.3, 0.8, 0.3), Vector3.new(side * 0.65, 2.8, -4.5), C.cream)
+        end
+    elseif kind == "bogling" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("MireSpike", Vector3.new(0.6, 2.2, 0.6), Vector3.new(math.cos(angle)*1.3, 3.15, math.sin(angle)*1.3), Color3.fromRGB(47,91,59))
+        end
+    elseif kind == "wisp" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("SpiritFlame", Vector3.new(0.85, 2.7, 0.85), Vector3.new(math.cos(angle)*2.1, 2.6, math.sin(angle)*2.1), Color3.fromRGB(140,232,255), Enum.Material.Neon, Enum.PartType.Ball)
+        end
+    elseif kind == "guardian" or kind == "ashgolem" or kind == "ancient" then
+        local glow = kind == "ashgolem" and Color3.fromRGB(255,110,54) or kind == "ancient" and Color3.fromRGB(196,126,255) or C.teal
+        for side = -1, 1 do
+            ornament("ShoulderPlate", Vector3.new(3.3, 2.1, 3), Vector3.new(side*3.8, 8, 0), C.darkStone, Enum.Material.Slate)
+            ornament("ArmRune", Vector3.new(0.5, 2.3, 0.3), Vector3.new(side*4, 5.7, -1.15), glow, Enum.Material.Neon)
+        end
+        ornament("HeartRune", Vector3.new(2.3, 2.8, 0.35), Vector3.new(0, 6, -2.1), glow, Enum.Material.Neon)
+        if kind == "ancient" then
+            for side = -1, 1 do ornament("CrownHorn", Vector3.new(1.1, 4, 1.1), Vector3.new(side*1.45, 12.6, 0), C.darkStone, Enum.Material.Slate) end
+        end
+    elseif kind == "knight" or kind == "bandit" then
+        ornament("Breastplate", Vector3.new(3.1, 2.6, 0.45), Vector3.new(0, 4.05, -1.15), kind == "knight" and C.stone or C.wood, Enum.Material.Metal)
+        ornament("Pauldron", Vector3.new(1.65, 1.2, 1.8), Vector3.new(1.85, 5.1, 0), C.darkStone, Enum.Material.Metal)
+        if kind == "knight" then ornament("HelmetCrest", Vector3.new(0.5, 1, 2.2), Vector3.new(0, 7.6, 0), C.gold, Enum.Material.Metal) end
+    end
     m:SetAttribute("EnemyType", kind)
     m:SetAttribute("Health", def.health)
     m:SetAttribute("MaxHealth", def.health)
@@ -1705,12 +1759,61 @@ local function animateMonsterAttack(record, now)
 	if now >= attackState.resolves then resolveMonsterAttack(record) end
 end
 
+
+-- Each anchored enemy has a lightweight procedural rig: relative part poses
+-- are evaluated after movement. No uploaded animations or external assets.
+local function captureEnemyRig(model)
+    local rest = {}
+    local pivot = model:GetPivot()
+    for _, item in ipairs(model:GetDescendants()) do
+        if item:IsA("BasePart") and item ~= model.PrimaryPart then
+            table.insert(rest, {part=item, offset=pivot:ToObjectSpace(item.CFrame), name=item.Name})
+        end
+    end
+    return rest
+end
+
+local function poseEnemy(record, now, moving, distance)
+    if distance > 120 and not record.attack then return end
+    local model = record.model
+    if not model.PrimaryPart then return end
+    local state = model:GetAttribute("AttackState")
+    local attacking = state == "Windup" or state == "Impact"
+    local rate = record.config.speed > 12 and 9 or 6
+    local phase = now * rate + record.phase
+    local intensity = moving and 1 or 0.12
+    local rise = math.sin(phase * 2) * (moving and 0.13 or 0.05)
+    local attackWave = attacking and math.sin(now * 18) * 0.24 or 0
+    local root = model:GetPivot()
+    for _, joint in ipairs(record.rig) do
+        local p = joint.part
+        if p.Parent then
+            local name = joint.name
+            local transform = CFrame.new(0, rise, 0)
+            if name == "Leg" or name == "ScorpionLeg" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and 0 or math.pi)) * 0.26 * intensity, 0, 0)
+            elseif name == "Arm" or name == "Claw" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and math.pi or 0)) * 0.24 * intensity - attackWave, 0, side * attackWave)
+            elseif name == "Tail" or name == "Stinger" or name == "StingerTip" then
+                transform = transform * CFrame.Angles(math.sin(phase * 0.6) * 0.15, math.sin(phase * 0.7) * 0.25, 0)
+            elseif name == "Head" or name == "HelmetCrest" or name == "CrownHorn" or name == "Hood" or name == "Mask" then
+                transform = transform * CFrame.Angles(-attackWave * 0.7, math.sin(phase * 0.35) * 0.08, 0)
+            elseif name == "SpiritFlame" or name == "MireSpike" then
+                transform = transform * CFrame.new(0, math.sin(phase + joint.offset.Position.X) * 0.4, 0)
+            end
+            p.CFrame = root * joint.offset * transform
+        end
+    end
+end
+
 for _, model in ipairs(world.Enemies:GetChildren()) do
 	local config = Config.Enemies[model:GetAttribute("EnemyType")]
 	if model:IsA("Model") and model.PrimaryPart and config then
 		local record = {
 			model=model, config=config, health=config.health, home=model:GetPivot(),
-			appearance=savedAppearance(model), nextAttack=0, attack=nil, target=nil,
+			appearance=savedAppearance(model), rig=captureEnemyRig(model), phase=#model.Name * 0.71, nextAttack=0, attack=nil, target=nil,
 		}
 		mobs[model] = record
 		model:SetAttribute("Alive", true)
@@ -2090,6 +2193,7 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		if record.attack then
 			animateMonsterAttack(record, now)
+			poseEnemy(record, now, false, 0)
 			continue
 		end
 		local position = model.PrimaryPart.Position
@@ -2119,6 +2223,7 @@ RunService.Heartbeat:Connect(function(dt)
 		elseif targetHumanoid and now >= (record.nextAttack or 0) and lineOfSight(target.Character, model) then
 			startMonsterAttack(record, targetRoot, now)
 		end
+		poseEnemy(record, now, flat.Magnitude > stopDistance, target and nearest or math.huge)
 		if not target and (model:GetPivot().Position - record.home.Position).Magnitude < 1 and record.health < record.config.health then
 			record.health = record.config.health
 			updateEnemyLabel(record)
@@ -2326,7 +2431,8 @@ local function resetCombatAnimation(state)
     end
 end
 
-local animationDurations = {basic=0.48, cleave=0.78, gather=0.68, potion=0.72, hit=0.3}
+local animationDurations = {basic=0.52, cleave=0.82, gather=0.68, potion=0.72, hit=0.34}
+local attackCombo = {}
 local function startCombatAnimation(actor, action)
     if typeof(actor) ~= "Instance" or not actor:IsA("Player") or actor.Parent ~= Players or type(action) ~= "string" then return end
     local character = actor.Character
@@ -2337,8 +2443,9 @@ local function startCombatAnimation(actor, action)
     if actor ~= player and (not localRoot or not actorRoot or (localRoot.Position - actorRoot.Position).Magnitude > 160) then return end
     local previous = combatAnimations[character]
     if previous then resetCombatAnimation(previous) end
+    if action == "basic" then attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1 end
     combatAnimations[character] = {
-        action=action, started=os.clock(), duration=animationDurations[action],
+        action=action, combo=attackCombo[character] or 1, started=os.clock(), duration=animationDurations[action],
         motors={
             right=motor(character, "RightShoulder", "Right Shoulder"),
             left=motor(character, "LeftShoulder", "Left Shoulder"),
@@ -2434,18 +2541,19 @@ local function animateCombat(now)
         local motors = state.motors
         local right, left, waist, neck = CFrame.new(), CFrame.new(), CFrame.new(), CFrame.new()
         if state.action == "basic" then
+            local direction = state.combo == 2 and -1 or 1
             if progress < 0.28 then
                 local alpha = progress / 0.28
-                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)), alpha)
-                waist = CFrame.Angles(0, math.rad(35 * alpha), 0)
+                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55 * direction)), alpha)
+                waist = CFrame.Angles(0, math.rad(35 * alpha * direction), math.rad(8 * alpha))
             elseif progress < 0.62 then
                 local alpha = (progress - 0.28) / 0.34
-                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)), alpha)
-                waist = CFrame.Angles(0, math.rad(35 - 85 * alpha), 0)
+                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55 * direction)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70 * direction)), alpha)
+                waist = CFrame.Angles(0, math.rad((35 - 85 * alpha) * direction), math.rad(-12 * math.sin(alpha * math.pi)))
             else
                 local alpha = (progress - 0.62) / 0.38
-                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)):Lerp(CFrame.new(), alpha)
-                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha)), 0)
+                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70 * direction)):Lerp(CFrame.new(), alpha)
+                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha) * direction), 0)
             end
         elseif state.action == "cleave" then
             local swing = math.sin(progress * math.pi)
