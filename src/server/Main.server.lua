@@ -653,7 +653,12 @@ local function travel(player, id)
 	end
 	if not validPortal then notify(player, "Aproxime-se do portal dessa região."); return end
 	if not cooldown(player, "travel", 2) then return end
-	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 6, destination.safe and -120 or 90)
+	local previous = regionAt(root.Position)
+    local arrivalCenter=Vector3.new(table.unpack(destination.center))
+    local previousCenter=previous and Vector3.new(table.unpack(previous.center)) or Vector3.zero
+    local incoming=previousCenter-arrivalCenter
+    if incoming.Magnitude < 1 then return end
+    local position=arrivalCenter+incoming.Unit*(destination.size*.32)+Vector3.new(0,7,0)
 	player.Character:PivotTo(CFrame.new(position))
 	root.AssemblyLinearVelocity, root.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
 	sessions[player].region = id
