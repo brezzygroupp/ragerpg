@@ -5,8 +5,8 @@
     "src/shared/CombatMath.lua": "5cff9e50f10243cbc7ac14b96216328d91f51298a8a009023bda5ef5bb00253e",
     "src/server/Economy.lua": "bba2cef0c28ba2697efe80ea29fb4324b686b68cd95d4d6feda91aaffaa8f29f",
     "src/server/Profiles.lua": "0271505a424667b62d89988c80f35d00ae3fc91ac08510db7843c5cbc2887e2e",
-    "src/server/World.lua": "0bd2f652b862dce53a31ecc89529c8c7de5090b8cb274da260f86142c6d2288f",
-    "src/server/Main.server.lua": "eb3980fcebd5dfe19bcb341e0b1de74e63a97d90c24496ac6d8c19dbdc687c44",
-    "src/client/Client.client.lua": "6f993d15057a4375e27e71b0f7325fb73612386a581ea336923e19b63fcee077"
+    "src/server/World.lua": "7a507e40d5a7cab329143fbd8ccd77f195f2b129c9fa77e81fd0e6cd370ca838",
+    "src/server/Main.server.lua": "7058d68c2299af663c2d6e864953213607a98a39c8a81ce885ae459305cd2609",
+    "src/client/Client.client.lua": "69577dd391c9df204004179379f2f40bd328e6c321bb3537206df1645c102de9"
   }
 }
