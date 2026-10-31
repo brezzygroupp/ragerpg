@@ -1,6 +1,6 @@
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 1
+Config.Version = 2
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05

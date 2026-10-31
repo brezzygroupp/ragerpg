@@ -7,10 +7,12 @@ Brumavale é uma base jogável e original de RPG sandbox, criada inteiramente co
 1. Abra uma experiência no Roblox Studio e pare qualquer teste em execução.
 2. Abra **Exibir (View) → Command Bar**.
 3. Abra [Brumavale.commandbar.lua](dist/Brumavale.commandbar.lua), copie o arquivo inteiro, cole na Command Bar e pressione **Enter** uma vez.
-4. Aguarde a mensagem `BRUMAVALE instalado!` no Output e pressione **Play**.
+4. Aguarde a mensagem `BRUMAVALE v2 instalado!` no Output e pressione **Play**.
 5. Salve ou publique a experiência pelo Studio quando estiver satisfeito.
 
 O instalador funciona offline e não usa modelos, plugins, IDs de assets, HTTP ou módulos de terceiros. Ele só cria objetos dentro dos namespaces `Brumavale`. Uma reinstalação preserva a versão anterior em `ServerStorage/BrumavaleBackup_*`. Se encontrar um objeto de outra origem com um desses nomes, ele para sem sobrescrevê-lo.
+
+Se uma versão anterior já estiver instalada, pare o teste, execute novamente o instalador completo e depois inicie um novo Play. A versão 2 verifica explicitamente que tanto o servidor quanto o `LocalScript` da interface foram ativados.
 
 ## O que já funciona
 
@@ -48,7 +50,7 @@ python3 tools/build.py
 python3 tools/check.py --luau /caminho/para/luau --compiler /caminho/para/luau-compile
 ```
 
-As verificações locais compilam cada script e o instalador final, conferem se o bundle está atualizado e executam 28 testes de transações da economia e 7 testes do salvamento com um DataStore simulado. A aparência, os prompts, a integração real com DataStore e o fluxo multiplayer ainda precisam de um teste final dentro do Roblox Studio, pois este ambiente de desenvolvimento não inclui o Studio.
+As verificações locais compilam cada script e o instalador final, conferem se o bundle está atualizado, executam 28 testes de transações da economia, 7 testes do salvamento com um DataStore simulado e verificam o bootstrap dos scripts de servidor e cliente. A aparência, os prompts, a integração real com DataStore e o fluxo multiplayer ainda precisam de um teste final dentro do Roblox Studio, pois este ambiente de desenvolvimento não inclui o Studio.
 
 ## Escopo desta versão
 

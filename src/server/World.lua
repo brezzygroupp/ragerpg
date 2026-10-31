@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 1
+local VERSION = 2
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),

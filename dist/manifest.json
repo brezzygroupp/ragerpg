@@ -1,11 +1,11 @@
 {
   "version": 1,
   "sources": {
-    "src/shared/Config.lua": "d00ab5a5e6b614064112fa72bac0687eb98dd99e1670cf9b0ef87248585fdf7a",
+    "src/shared/Config.lua": "0b4f075203a2c355b53c1340cf77c168e0dd987501badc68d829475f6faffb96",
     "src/server/Economy.lua": "bba2cef0c28ba2697efe80ea29fb4324b686b68cd95d4d6feda91aaffaa8f29f",
     "src/server/Profiles.lua": "0271505a424667b62d89988c80f35d00ae3fc91ac08510db7843c5cbc2887e2e",
-    "src/server/World.lua": "866fd85c58cda6e46e4051f39cb5a45fb55345ffb82dad1281d4680734085984",
-    "src/server/Main.server.lua": "dbce17871c807a2476eeca4fc1cdacd8ebecbe3a2e0e5a717e997d1d922a76be",
-    "src/client/Client.client.lua": "19ad3517e9fc13db17fa2e362dfdb4f2bc97b80420a702f493a811c90c4543c0"
+    "src/server/World.lua": "ad9df4ff3125b5d90a61aef974b6597f08536103d02fd5a95029c43a3d71b6e3",
+    "src/server/Main.server.lua": "90651bae3820fceb8069f34148dfb57c76c3e35e36d192b396a47d09a060bb08",
+    "src/client/Client.client.lua": "4a7a241a5e7cce3c59fc1f11401983152ff9479e92e40a5422a2e99111e3eee4"
   }
 }

@@ -41,6 +41,7 @@ gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 20
 gui.Parent = player:WaitForChild("PlayerGui")
+gui:SetAttribute("Version", Config.Version)
 
 local function create(className, parent, properties)
     local object = Instance.new(className)
@@ -602,6 +603,7 @@ local enemies = world:WaitForChild("Enemies")
 for _, enemy in ipairs(enemies:GetChildren()) do observeEnemy(enemy) end
 enemies.ChildAdded:Connect(observeEnemy)
 configureLayout()
+player:SetAttribute("BrumavaleClientReady", true)
 task.spawn(function()
     for _ = 1, 30 do
         if snapshot then break end

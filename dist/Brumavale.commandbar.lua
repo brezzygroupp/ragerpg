@@ -8,7 +8,7 @@ local Sources = {}
 Sources.Config = [=[
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 1
+Config.Version = 2
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05
@@ -588,7 +588,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 1
+local VERSION = 2
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
@@ -1145,6 +1145,7 @@ local Debris = game:GetService("Debris")
 local HttpService = game:GetService("HttpService")
 
 local shared = ReplicatedStorage:WaitForChild("Brumavale")
+shared:SetAttribute("ServerRuntime", "Starting")
 local Config = require(shared:WaitForChild("Config"))
 local Economy = require(script.Parent:WaitForChild("Economy"))
 local Profiles = require(script.Parent:WaitForChild("Profiles"))
@@ -1802,7 +1803,8 @@ game:BindToClose(function()
 	Profiles.Shutdown()
 end)
 
-print("[Brumavale] Servidor iniciado: 5 regiões, economia, combate, coleta e mercado local.")
+shared:SetAttribute("ServerRuntime", "Ready")
+print("[Brumavale] Servidor v" .. tostring(Config.Version) .. " iniciado: 5 regiões, economia, combate, coleta e mercado local.")
 ]=]
 
 Sources.Client = [=[
@@ -1849,6 +1851,7 @@ gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 20
 gui.Parent = player:WaitForChild("PlayerGui")
+gui:SetAttribute("Version", Config.Version)
 
 local function create(className, parent, properties)
     local object = Instance.new(className)
@@ -2410,6 +2413,7 @@ local enemies = world:WaitForChild("Enemies")
 for _, enemy in ipairs(enemies:GetChildren()) do observeEnemy(enemy) end
 enemies.ChildAdded:Connect(observeEnemy)
 configureLayout()
+player:SetAttribute("BrumavaleClientReady", true)
 task.spawn(function()
     for _ = 1, 30 do
         if snapshot then break end
@@ -2453,7 +2457,9 @@ local function make(class, name, parent, source)
     local object = Instance.new(class)
     object.Name = name
     object:SetAttribute("BrumavaleGenerated",true)
-    if object:IsA("Script") then object.Disabled = true end
+    -- LocalScript currently inherits Script in Roblox's class hierarchy. Keep
+    -- every runnable script stopped until the complete installation succeeds.
+    if object:IsA("BaseScript") then object.Enabled = false end
     if source then object.Source = source end
     object.Parent = parent
     table.insert(created, object)
@@ -2472,7 +2478,7 @@ local ok, problem = xpcall(function()
         end
     end
     local shared = make("Folder","Brumavale",ReplicatedStorage)
-    shared:SetAttribute("Version",1)
+    shared:SetAttribute("Version",2)
     make("ModuleScript","Config",shared,Sources.Config)
     make("RemoteEvent","Action",shared)
     make("RemoteEvent","State",shared)
@@ -2482,12 +2488,14 @@ local ok, problem = xpcall(function()
     make("ModuleScript","Profiles",server,Sources.Profiles)
     local worldModule = make("ModuleScript","World",server,Sources.World)
     local main = make("Script","Main",server,Sources.Main)
-    make("LocalScript","BrumavaleClient",StarterScripts,Sources.Client)
+    local client = make("LocalScript","BrumavaleClient",StarterScripts,Sources.Client)
     local world = require(worldModule).Build()
     assert(world and world.Parent == workspace,"A geração do mapa não retornou um mundo válido.")
     world:SetAttribute("BrumavaleGenerated",true)
     assert(world:FindFirstChild("TownSpawn",true),"Spawn não gerado.")
-    main.Disabled = false
+    main.Enabled = true
+    client.Enabled = true
+    assert(main.Enabled and client.Enabled, "Os scripts de runtime não foram ativados.")
 end, debug.traceback)
 if not ok then
     local world = workspace:FindFirstChild("BrumavaleWorld")
@@ -2499,7 +2507,8 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE instalado! Pressione Play. I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
+print("BRUMAVALE v2 instalado! Servidor e cliente ativados. Pressione Play.")
+print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")
 if #previous > 0 then print("Instalação anterior preservada em ServerStorage/" .. backup.Name) end
