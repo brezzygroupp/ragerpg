@@ -783,6 +783,7 @@ local function within(point, guiObject)
     return point.X >= origin.X and point.Y >= origin.Y and point.X <= origin.X + size.X and point.Y <= origin.Y + size.Y
 end
 local equipTargets = {}
+local inventoryDropConnection
 local function showInventory()
     pageTitle.Text = "Equipamento e inventário"
     pageHint.Text = "Arraste armas ou armaduras para equipar. Arraste itens entre espaços para organizar a mochila."
@@ -821,15 +822,15 @@ local function showInventory()
     local order = {}
     for _, id in ipairs(ids) do
         local pos = inventoryPositions[id]
-        if pos and pos >= 1 and pos <= 40 and not order[pos] then order[pos]=id end
+        if pos and pos >= 1 and pos <= 32 and not order[pos] then order[pos]=id end
     end
     for _, id in ipairs(ids) do
         local found=false
         for _, occupied in pairs(order) do if occupied==id then found=true break end end
-        if not found then for i=1,40 do if not order[i] then order[i]=id break end end end
+        if not found then for i=1,32 do if not order[i] then order[i]=id break end end end
     end
     local slotObjects = {}
-    for i=1,40 do
+    for i=1,32 do
         local id=order[i]
         local col,rowIndex=(i-1)%columns, math.floor((i-1)/columns)
         local tile=button(grid,"",{Position=UDim2.fromOffset(col*(cell+gap),rowIndex*(cell+gap)),Size=UDim2.fromOffset(cell,cell),BackgroundColor3=palette.raised,Text="",ZIndex=15},function()
@@ -848,10 +849,9 @@ local function showInventory()
         end
     end
     -- One-shot global pointer release avoids repeated connections every refresh.
-    local connection
-    connection=UserInputService.InputEnded:Connect(function(input)
+    if inventoryDropConnection then inventoryDropConnection:Disconnect() end
+    inventoryDropConnection=UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType~=Enum.UserInputType.MouseButton1 and input.UserInputType~=Enum.UserInputType.Touch then return end
-        if connection then connection:Disconnect() end
         local dragging=dragState
         dragState=nil
         if not dragging or not panelOpen or activeTab~="inventory" then return end
@@ -961,6 +961,7 @@ renderPage = function()
     clearList(body)
     resetFooter()
     body.ScrollingEnabled = true
+    if inventoryDropConnection then inventoryDropConnection:Disconnect(); inventoryDropConnection=nil end
     for id, tab in pairs(tabButtons) do
         tab.BackgroundColor3 = id == activeTab and palette.gold or palette.raised
         tab.TextColor3 = id == activeTab and palette.ink or palette.text
