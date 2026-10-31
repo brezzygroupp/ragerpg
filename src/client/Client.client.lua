@@ -143,7 +143,8 @@ local function resetCombatAnimation(state)
     end
 end
 
-local animationDurations = {basic=0.48, cleave=0.78, gather=0.68, potion=0.72, hit=0.3}
+local animationDurations = {basic=0.52, cleave=0.82, gather=0.68, potion=0.72, hit=0.34}
+local attackCombo = {}
 local function startCombatAnimation(actor, action)
     if typeof(actor) ~= "Instance" or not actor:IsA("Player") or actor.Parent ~= Players or type(action) ~= "string" then return end
     local character = actor.Character
@@ -154,8 +155,9 @@ local function startCombatAnimation(actor, action)
     if actor ~= player and (not localRoot or not actorRoot or (localRoot.Position - actorRoot.Position).Magnitude > 160) then return end
     local previous = combatAnimations[character]
     if previous then resetCombatAnimation(previous) end
+    if action == "basic" then attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1 end
     combatAnimations[character] = {
-        action=action, started=os.clock(), duration=animationDurations[action],
+        action=action, combo=attackCombo[character] or 1, started=os.clock(), duration=animationDurations[action],
         motors={
             right=motor(character, "RightShoulder", "Right Shoulder"),
             left=motor(character, "LeftShoulder", "Left Shoulder"),
@@ -251,18 +253,19 @@ local function animateCombat(now)
         local motors = state.motors
         local right, left, waist, neck = CFrame.new(), CFrame.new(), CFrame.new(), CFrame.new()
         if state.action == "basic" then
+            local direction = state.combo == 2 and -1 or 1
             if progress < 0.28 then
                 local alpha = progress / 0.28
-                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)), alpha)
-                waist = CFrame.Angles(0, math.rad(35 * alpha), 0)
+                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55 * direction)), alpha)
+                waist = CFrame.Angles(0, math.rad(35 * alpha * direction), math.rad(8 * alpha))
             elseif progress < 0.62 then
                 local alpha = (progress - 0.28) / 0.34
-                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)), alpha)
-                waist = CFrame.Angles(0, math.rad(35 - 85 * alpha), 0)
+                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55 * direction)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70 * direction)), alpha)
+                waist = CFrame.Angles(0, math.rad((35 - 85 * alpha) * direction), math.rad(-12 * math.sin(alpha * math.pi)))
             else
                 local alpha = (progress - 0.62) / 0.38
-                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)):Lerp(CFrame.new(), alpha)
-                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha)), 0)
+                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70 * direction)):Lerp(CFrame.new(), alpha)
+                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha) * direction), 0)
             end
         elseif state.action == "cleave" then
             local swing = math.sin(progress * math.pi)
