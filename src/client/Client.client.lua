@@ -173,6 +173,7 @@ end
 -- Use native Roblox AnimationTracks as the primary animation path.
 -- Default Roblox sword slash/lunge are keyframed and work on standard R15/R6 rigs.
 local nativeTracks = {}
+local comboIndex = {}
 local nativeIds = {
     R15 = {basic="522635514", cleave="522638767", gather="522635514", hit="522638767"},
     R6 = {basic="129967390", cleave="129967478", gather="129967390", hit="129967478"},
@@ -182,7 +183,9 @@ local function playNativeAnimation(actor, action)
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     if not humanoid then return false, "sem Humanoid" end
     local rigType = humanoid.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
+    local combo = comboIndex[character] or 1
     local id = nativeIds[rigType][action]
+    if action == "basic" and combo == 3 then id = nativeIds[rigType].cleave end
     if not id then return false, "sem animacao para " .. action end
     local animator = humanoid:FindFirstChildOfClass("Animator")
     if not animator then
@@ -201,9 +204,13 @@ local function playNativeAnimation(actor, action)
     end
     track.Priority = Enum.AnimationPriority.Action4
     track.Looped = false
-    local played, err = pcall(function() track:Play(0.08, 1, action == "cleave" and 0.85 or 1.05) end)
+    local played, err = pcall(function() track:Play(0.08, 1, action == "cleave" and 0.82 or (action == "basic" and (combo == 2 and 1.21 or combo == 3 and 0.9 or 1.06) or 1)) end)
     if not played then return false, tostring(err) end
     nativeTracks[character] = {track=track, action=action}
+    track.Stopped:Once(function()
+        if nativeTracks[character] and nativeTracks[character].track == track then nativeTracks[character] = nil end
+        track:Destroy()
+    end)
     return true, "AnimationTrack " .. tostring(id)
 end
 local animationDurations = {basic=0.52, cleave=0.82, gather=0.68, potion=0.72, hit=0.34}
@@ -262,7 +269,10 @@ local function startCombatAnimation(actor, action)
     if actor ~= player and (not localRoot or not actorRoot or (localRoot.Position - actorRoot.Position).Magnitude > 160) then return end
     local previous = combatAnimations[character]
     if previous then resetCombatAnimation(previous) end
-    if action == "basic" then attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1 end
+    if action == "basic" then
+        attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1
+        comboIndex[character] = attackCombo[character]
+    end
     if action == "basic" or action == "cleave" then ensureSwordVisual(character) end
     local nativeOK, nativeMessage = playNativeAnimation(actor, action)
     if actor == player then
