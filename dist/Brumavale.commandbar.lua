@@ -8,7 +8,7 @@ local Sources = {}
 Sources.Config = [=[
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 3
+Config.Version = 4
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05
@@ -46,17 +46,32 @@ Config.Recipes = {
 	sword3 = {ingredients={ingot=6,plank=3,crystal=6},amount=1,fee=90,level=4},
 }
 Config.Regions = {
-	{id="town",name="Porto Bruma",center={0,0,0},size=240,safe=true,level=1,color={74,113,104}},
-	{id="meadow",name="Prados do Sol",center={0,0,270},size=240,safe=false,level=1,color={109,151,77}},
-	{id="forest",name="Bosque Âmbar",center={270,0,0},size=240,safe=false,level=2,color={55,101,78}},
-	{id="quarry",name="Pedreira Cinzenta",center={-270,0,0},size=240,safe=false,level=3,color={116,119,129}},
-	{id="ruins",name="Ruínas da Aurora",center={0,0,-270},size=240,safe=false,level=4,color={77,82,113}},
+	{id="town",name="Porto Bruma",center={0,0,0},size=500,safe=true,level=1,color={74,113,104}},
+	{id="meadow",name="Prados do Sol",center={0,0,550},size=500,safe=false,level=1,color={109,151,77}},
+	{id="forest",name="Bosque Âmbar",center={550,0,0},size=500,safe=false,level=2,color={55,101,78}},
+	{id="quarry",name="Pedreira Cinzenta",center={-550,0,0},size=500,safe=false,level=3,color={116,119,129}},
+	{id="ruins",name="Ruínas da Aurora",center={0,0,-550},size=500,safe=false,level=4,color={77,82,113}},
+	{id="marsh",name="Pântano Esquecido",center={-550,0,550},size=500,safe=false,level=3,color={68,105,86}},
+	{id="highlands",name="Planalto dos Ventos",center={550,0,550},size=500,safe=false,level=3,color={119,143,102}},
+	{id="frost",name="Picos de Gelo",center={550,0,-550},size=500,safe=false,level=5,color={170,195,204}},
+	{id="ash",name="Ermos de Cinza",center={-550,0,-550},size=500,safe=false,level=5,color={95,83,79}},
+	{id="canyon",name="Desfiladeiro Rubro",center={1100,0,0},size=500,safe=false,level=5,color={161,100,77}},
+	{id="grove",name="Jardim Luminoso",center={0,0,1100},size=500,safe=false,level=4,color={82,148,127}},
+	{id="citadel",name="Cidadela Perdida",center={0,0,-1100},size=500,safe=false,level=6,color={81,74,105}},
 }
 Config.Enemies = {
 	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18,attack={name="Salto viscoso",shape="circle",range=6,radius=6,windup=0.9,cooldown=1.9}},
 	wolf = {name="Lobo âmbar",health=78,damage=11,speed=13,xp=40,silver=14,loot={hide=2},aggro=40,respawn=23,attack={name="Bote",shape="cone",range=9,angle=70,windup=0.7,cooldown=1.7}},
 	bandit = {name="Saqueador",health=105,damage=14,speed=10,xp=58,silver=22,loot={ore=2},aggro=38,respawn=26,attack={name="Corte frontal",shape="line",range=12,width=5,windup=1.0,cooldown=2.2}},
 	guardian = {name="Sentinela da aurora",health=240,damage=21,speed=8,xp=130,silver=60,loot={crystal=3},aggro=40,respawn=40,attack={name="Ruptura rúnica",shape="circle",range=14,radius=14,windup=1.5,cooldown=3.1}},
+	bogling = {name="Rastejante do pântano",health=82,damage=12,speed=9,xp=44,silver=15,loot={fiber=2},aggro=38,respawn=22,attack={name="Maré tóxica",shape="circle",radius=7,range=7,windup=1.2,cooldown=2.5}},
+	boar = {name="Javali selvagem",health=115,damage=17,speed=15,xp=63,silver=24,loot={hide=3},aggro=43,respawn=25,attack={name="Investida",shape="line",range=13,width=5,windup=0.8,cooldown=2.4}},
+	wisp = {name="Espírito errante",health=70,damage=14,speed=12,xp=58,silver=22,loot={crystal=1},aggro=42,respawn=24,attack={name="Clarão",shape="circle",radius=9,range=9,windup=1.1,cooldown=2.8}},
+	icewolf = {name="Lobo da geada",health=144,damage=20,speed=15,xp=83,silver=35,loot={hide=3},aggro=45,respawn=29,attack={name="Mordida congelante",shape="cone",range=10,angle=80,windup=0.8,cooldown=2.2}},
+	ashgolem = {name="Golem de cinzas",health=310,damage=28,speed=7,xp=165,silver=73,loot={ore=4},aggro=40,respawn=42,attack={name="Impacto vulcânico",shape="circle",radius=15,range=15,windup=1.6,cooldown=3.4}},
+	scorpion = {name="Escorpião rubro",health=155,damage=24,speed=12,xp=100,silver=40,loot={ore=2},aggro=44,respawn=30,attack={name="Ferrão",shape="cone",range=11,angle=65,windup=0.9,cooldown=2.6}},
+	knight = {name="Cavaleiro exilado",health=220,damage=29,speed=11,xp=140,silver=65,loot={ingot=2},aggro=43,respawn=35,attack={name="Golpe pesado",shape="line",range=15,width=7,windup=1.2,cooldown=2.8}},
+	ancient = {name="Colosso ancestral",health=650,damage=39,speed=7,xp=350,silver=180,loot={crystal=5},aggro=48,respawn=80,attack={name="Onda ancestral",shape="circle",radius=19,range=19,windup=2,cooldown=4.5}},
 }
 Config.Nodes = {
 	tree = {name="Árvore",item="wood",amount=3,respawn=18,xp=9,color={111,79,50}},
@@ -78,6 +93,7 @@ function Config.LevelForXP(xp)
 	return math.min(50, math.floor((1 + math.sqrt(1 + 4 * math.max(0,xp) / 75)) / 2))
 end
 return Config
+
 ]=]
 
 Sources.CombatMath = [=[
@@ -631,7 +647,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 3
+local VERSION = 4
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
@@ -847,13 +863,13 @@ local function enemy(parent, kind, pos, index)
     local def = Config.Enemies[kind]
     assert(def, "Missing enemy configuration: " .. kind)
     local m = model(parent, kind .. "_" .. tostring(index))
-    if kind == "slime" then
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(4.5, 3.1, 4.5), pos + Vector3.new(0, 1.7, 0), Color3.fromRGB(114, 191, 135), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+    if kind == "slime" or kind == "bogling" or kind == "wisp" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(4.5, 3.1, 4.5), pos + Vector3.new(0, 1.7, 0), (kind == "wisp" and Color3.fromRGB(112,220,242) or kind == "bogling" and Color3.fromRGB(90,133,83) or Color3.fromRGB(114,191,135)), kind == "wisp" and Enum.Material.Neon or Enum.Material.SmoothPlastic, Enum.PartType.Ball))
         for _, x in ipairs({-0.8, 0.8}) do
             noCollision(part(m, "Eye", Vector3.new(0.65, 0.7, 0.3), pos + Vector3.new(x, 2.1, -2), C.ink, Enum.Material.SmoothPlastic, Enum.PartType.Ball))
         end
-    elseif kind == "wolf" then
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 2.4, 5), pos + Vector3.new(0, 2.7, 0), Color3.fromRGB(132, 142, 148), Enum.Material.Slate))
+    elseif kind == "wolf" or kind == "icewolf" or kind == "boar" or kind == "scorpion" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 2.4, 5), pos + Vector3.new(0, 2.7, 0), (kind == "icewolf" and Color3.fromRGB(196,215,231) or kind == "boar" and Color3.fromRGB(111,75,58) or kind == "scorpion" and Color3.fromRGB(147,62,52) or Color3.fromRGB(132,142,148)), Enum.Material.Slate))
         noCollision(part(m, "Head", Vector3.new(2.5, 2.3, 2.4), pos + Vector3.new(0, 3.5, -2.8), Color3.fromRGB(161, 169, 173)))
         noCollision(part(m, "Muzzle", Vector3.new(1.6, 1, 1.3), pos + Vector3.new(0, 3.1, -4.2), C.darkStone))
         for _, x in ipairs({-1, 1}) do
@@ -864,7 +880,7 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.4, 0.4, 0.2), pos + Vector3.new(x * 0.7, 3.8, -4.05), C.gold, Enum.Material.Neon))
         end
         noCollision(part(m, "Tail", Vector3.new(0.9, 0.9, 2.5), CFrame.new(pos + Vector3.new(0, 3, 3.1)) * CFrame.Angles(-0.25, 0, 0), C.darkStone))
-    elseif kind == "guardian" then
+    elseif kind == "guardian" or kind == "ashgolem" or kind == "ancient" then
         m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(5.5, 6, 3.5), pos + Vector3.new(0, 5.7, 0), C.darkStone, Enum.Material.Slate))
         noCollision(part(m, "Head", Vector3.new(3.2, 3, 3), pos + Vector3.new(0, 10, 0), C.stone, Enum.Material.Slate))
         noCollision(part(m, "Rune", Vector3.new(1.6, 2.2, 0.25), pos + Vector3.new(0, 6, -1.9), Color3.fromRGB(157, 124, 235), Enum.Material.Neon))
@@ -874,7 +890,7 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.75, 0.45, 0.2), pos + Vector3.new(x * 0.8, 10.2, -1.6), C.teal, Enum.Material.Neon))
         end
     else
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), Color3.fromRGB(105, 62, 68)))
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), (kind == "knight" and Color3.fromRGB(56,74,102) or Color3.fromRGB(105,62,68)))
         noCollision(part(m, "Head", Vector3.new(1.8, 1.8, 1.8), pos + Vector3.new(0, 6.3, 0), Color3.fromRGB(196, 156, 118)))
         noCollision(part(m, "Hood", Vector3.new(2, 0.7, 2), pos + Vector3.new(0, 7.35, 0), C.darkStone))
         noCollision(part(m, "Mask", Vector3.new(1.9, 0.7, 0.3), pos + Vector3.new(0, 5.95, -0.95), C.darkStone))
@@ -1032,7 +1048,7 @@ function World.Build()
     -- The lagoon sits just above Roblox's default Baseplate, while all playable
     -- surfaces are lifted one stud below. A fresh Baseplate template therefore
     -- looks intentional without deleting or editing any user-owned object.
-    local water = noCollision(part(ground, "Lagoon", Vector3.new(820, 1, 820), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
+    local water = noCollision(part(ground, "Lagoon", Vector3.new(2900, 1, 2900), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
     water.Transparency = 0.25
     water.CastShadow = false
     water.CanTouch = false
@@ -1051,8 +1067,7 @@ function World.Build()
             portal(portals, center + Vector3.new(-24, 0, 8), "town", "Voltar a Brumavale", C.teal)
         end
     end
-    for _, p in ipairs({Vector3.new(0, 0, 135), Vector3.new(0, 0, -135)}) do bridge(ground, p, false) end
-    for _, p in ipairs({Vector3.new(135, 0, 0), Vector3.new(-135, 0, 0)}) do bridge(ground, p, true) end
+    -- Expanded islands are connected through travel portals instead of short bridges.
 
     -- Town square: readable approaches, service counters, fountain and waystones.
     part(ground, "TownSquare", Vector3.new(116, 0.16, 116), Vector3.new(0, 0.08, 10), Color3.fromRGB(159, 155, 130), Enum.Material.Cobblestone)
@@ -1092,6 +1107,9 @@ function World.Build()
     local townGates = {
         {"meadow", Vector3.new(0, 0, 88)}, {"forest", Vector3.new(88, 0, 0)},
         {"quarry", Vector3.new(-88, 0, 0)}, {"ruins", Vector3.new(0, 0, -88)},
+        {"marsh", Vector3.new(-100, 0, 93)}, {"highlands", Vector3.new(100, 0, 93)},
+        {"frost", Vector3.new(100, 0, -93)}, {"ash", Vector3.new(-100, 0, -93)},
+        {"canyon", Vector3.new(108, 0, 45)}, {"grove", Vector3.new(0, 0, 111)}, {"citadel", Vector3.new(0, 0, -111)},
     }
     for _, entry in ipairs(townGates) do
         local region = assert(regionsById[entry[1]], "Missing region " .. entry[1])
@@ -1109,23 +1127,42 @@ function World.Build()
         forest = {{"tree", -45, 45}, {"tree", 40, 40}, {"tree", 65, -35}, {"tree", -55, -50}, {"tree", 85, 60}, {"tree", -80, 75}, {"fiber", 30, -40}, {"fiber", -35, 50}, {"rock", -70, -70}},
         quarry = {{"rock", -40, 45}, {"rock", 40, 40}, {"rock", 68, -35}, {"ore", -55, -50}, {"ore", 65, 65}, {"ore", -80, 70}, {"ore", 30, -45}, {"ore", -35, 65}, {"crystal", -85, -80}},
         ruins = {{"crystal", -45, 40}, {"crystal", 40, 50}, {"crystal", -65, -40}, {"ore", -85, 65}, {"rock", 75, 75}, {"fiber", 25, -40}},
+        marsh = {{"fiber",-100,90},{"tree",95,-100},{"rock",120,120}},
+        highlands = {{"tree",105,105},{"rock",-120,-110},{"fiber",90,-90}},
+        frost = {{"rock",-120,95},{"ore",105,-110},{"crystal",130,100}},
+        ash = {{"ore",110,120},{"rock",-125,-125},{"crystal",110,-100}},
+        canyon = {{"ore",115,95},{"rock",-110,-120},{"crystal",125,-90}},
+        grove = {{"fiber",105,110},{"tree",-115,-100},{"crystal",110,-100}},
+        citadel = {{"crystal",120,-120},{"ore",-120,105},{"rock",-105,-105}},
     }
     for _, region in ipairs(Config.Regions) do
         for _, row in ipairs(layouts[region.id] or {}) do node(region.id, row[1], row[2], row[3]) end
+        if not region.safe then
+            local kinds = region.id == "marsh" and {"fiber","tree","rock"} or
+                region.id == "grove" and {"fiber","tree","crystal"} or
+                region.id == "meadow" and {"fiber","tree","rock"} or
+                region.id == "forest" and {"tree","fiber","rock"} or {"rock","ore","crystal"}
+            for n = 1, 15 do
+                local x, z = rng:NextNumber(-208,208), rng:NextNumber(-208,208)
+                if math.abs(x) > 24 and math.abs(z) > 24 then
+                    node(region.id, kinds[(n % #kinds)+1], x, z)
+                end
+            end
+        end
     end
     -- Low-density border vegetation creates silhouettes while limiting draw calls.
     for _, region in ipairs(Config.Regions) do
         local center = vector(region.center)
-        if region.id == "town" or region.id == "meadow" or region.id == "forest" then
-            for n = 1, 10 do
-                local angle = n * math.pi * 0.2 + 0.17
-                local pos = center + Vector3.new(math.cos(angle) * 104, 0, math.sin(angle) * 104)
+        if region.id == "town" or region.id == "meadow" or region.id == "forest" or region.id == "grove" or region.id == "marsh" or region.id == "highlands" then
+            for n = 1, 24 do
+                local angle = n * math.pi / 12 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 208, 0, math.sin(angle) * 208)
                 if region.id == "forest" then pine(decor, pos, rng) else tree(decor, pos, rng, region.id == "town") end
             end
         else
-            for n = 1, 10 do
-                local angle = n * math.pi * 0.2 + 0.17
-                local pos = center + Vector3.new(math.cos(angle) * 106, 0, math.sin(angle) * 106)
+            for n = 1, 24 do
+                local angle = n * math.pi / 12 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 208, 0, math.sin(angle) * 208)
                 part(decor, "CliffBoulder", Vector3.new(rng:NextNumber(9, 16), rng:NextNumber(7, 16), rng:NextNumber(9, 16)), CFrame.new(pos + Vector3.new(0, 3, 0)) * CFrame.Angles(0.1, angle, 0.15), C.darkStone, Enum.Material.Slate)
             end
         end
@@ -1144,18 +1181,60 @@ function World.Build()
         noCollision(part(decor, "ForestMushroom", Vector3.new(2.6, 1.3, 2.6), forestCenter + Vector3.new(-65 + n * 4, 1.5, 35), Color3.fromRGB(155, 110, 181), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
     end
 
+    -- Three recognizable landmarks per wilderness region.
+    for _, region in ipairs(Config.Regions) do
+        if not region.safe then
+            local center = vector(region.center)
+            local landmark = model(decor, "Landmark_" .. region.id)
+            for n = 1, 3 do
+                local position = center + Vector3.new((n-2)*65+85, 0, n%2==0 and 140 or -140)
+                if region.id == "ruins" or region.id == "citadel" or region.id == "ash" then
+                    for k = 1, 4 do
+                        part(landmark, "AncientColumn", Vector3.new(4, 8+k*2, 4), position+Vector3.new(k*7,4+k,0),C.darkStone,Enum.Material.Slate)
+                    end
+                elseif region.id == "quarry" or region.id == "canyon" or region.id == "frost" then
+                    for k = 1, 5 do
+                        part(landmark,"RockFormation",Vector3.new(7+k,6+k*2,7+k),position+Vector3.new(k*7,3+k,0),C.stone,Enum.Material.Slate)
+                    end
+                else
+                    house(landmark, position, n*0.7,C.roof)
+                    lantern(landmark,position+Vector3.new(18,0,9))
+                end
+                crate(landmark,position+Vector3.new(-12,0,14),3)
+            end
+        end
+    end
     local enemyIndex = 0
     local spawns = {
         meadow = {{"slime", -68, 40}, {"slime", 65, 50}, {"slime", 45, -70}, {"slime", -65, -65}},
         forest = {{"wolf", -70, 42}, {"wolf", 72, 40}, {"wolf", 45, -75}, {"bandit", -65, -70}},
         quarry = {{"bandit", -70, 40}, {"bandit", 75, 40}, {"bandit", 45, -72}},
         ruins = {{"bandit", -70, 40}, {"bandit", -60, -65}, {"guardian", 65, -55}},
+        marsh = {{"bogling",-110,110},{"bogling",100,-120},{"boar",125,100}},
+        highlands = {{"boar",-120,100},{"wolf",120,-120},{"bandit",100,120}},
+        frost = {{"icewolf",-120,110},{"icewolf",120,-110},{"wisp",110,120}},
+        ash = {{"ashgolem",-120,105},{"wisp",120,-115},{"ashgolem",110,110}},
+        canyon = {{"scorpion",-120,110},{"scorpion",120,-100},{"knight",115,120}},
+        grove = {{"wisp",-120,105},{"boar",120,-120},{"wisp",110,110}},
+        citadel = {{"knight",-120,100},{"knight",120,-110},{"ancient",105,115}},
     }
     for _, region in ipairs(Config.Regions) do
-        for _, row in ipairs(spawns[region.id] or {}) do
-            enemyIndex = enemyIndex + 1
-            local m = enemy(enemies, row[1], vector(region.center) + Vector3.new(row[2], 0, row[3]), enemyIndex)
-            m:SetAttribute("Region", region.id)
+        if not region.safe then
+            local entries = spawns[region.id] or {}
+            for _, row in ipairs(entries) do
+                enemyIndex += 1
+                local m = enemy(enemies,row[1],vector(region.center)+Vector3.new(row[2],0,row[3]),enemyIndex)
+                m:SetAttribute("Region",region.id)
+            end
+            for n = 1, 5 do
+                local kind = entries[(n % #entries)+1][1]
+                local x,z = rng:NextNumber(-205,205),rng:NextNumber(-205,205)
+                if math.abs(x) < 24 then x += 50 end
+                if math.abs(z) < 24 then z += 50 end
+                enemyIndex += 1
+                local m = enemy(enemies,kind,vector(region.center)+Vector3.new(x,0,z),enemyIndex)
+                m:SetAttribute("Region",region.id)
+            end
         end
     end
 
@@ -1176,6 +1255,7 @@ function World.Build()
 end
 
 return World
+
 ]=]
 
 Sources.Main = [=[
@@ -3014,7 +3094,7 @@ local ok, problem = xpcall(function()
         end
     end
     local shared = make("Folder","Brumavale",ReplicatedStorage)
-    shared:SetAttribute("Version",3)
+    shared:SetAttribute("Version",4)
     make("ModuleScript","Config",shared,Sources.Config)
     make("ModuleScript","CombatMath",shared,Sources.CombatMath)
     make("RemoteEvent","Action",shared)
@@ -3045,7 +3125,7 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE v3 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
+print("BRUMAVALE v4 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
 print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")
