@@ -130,9 +130,23 @@ clientEffects.Name = "BrumavaleClientEffects"
 clientEffects.Parent = world
 
 local function motor(character, ...)
-    for index = 1, select("#", ...) do
-        local joint = character:FindFirstChild(select(index, ...), true)
-        if joint and joint:IsA("Motor6D") then return joint end
+    local names = {}
+    for index = 1, select("#", ...) do names[select(index, ...)] = true end
+    -- Some custom avatars rename Motor6D joints; search both name and Part1.
+    for _, object in ipairs(character:GetDescendants()) do
+        if object:IsA("Motor6D") and names[object.Name] then return object end
+    end
+    local requested = select(1, ...)
+    local target = requested == "RightShoulder" and {"RightUpperArm", "Right Arm"}
+        or requested == "LeftShoulder" and {"LeftUpperArm", "Left Arm"}
+        or requested == "Waist" and {"UpperTorso", "Torso"}
+        or requested == "Neck" and {"Head"} or {}
+    for _, partName in ipairs(target) do
+        for _, object in ipairs(character:GetDescendants()) do
+            if object:IsA("Motor6D") and object.Part1 and object.Part1.Name == partName then
+                return object
+            end
+        end
     end
     return nil
 end
@@ -214,16 +228,63 @@ local function startCombatAnimation(actor, action)
     if previous then resetCombatAnimation(previous) end
     if action == "basic" then attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1 end
     if action == "basic" or action == "cleave" then ensureSwordVisual(character) end
+    local joints = {
+        right=jointEntry(character, "RightShoulder", "Right Shoulder"),
+        left=jointEntry(character, "LeftShoulder", "Left Shoulder"),
+        waist=jointEntry(character, "Waist", "RootJoint", "Root Joint"),
+        neck=jointEntry(character, "Neck"),
+    }
+    local rig = humanoid.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
+    local count = 0
+    for _, entry in pairs(joints) do if entry then count += 1 end end
+    if actor == player then
+        gui:SetAttribute("CombatRig", rig)
+        gui:SetAttribute("CombatJoints", count)
+        gui:SetAttribute("CombatAction", action)
+        if count == 0 then
+            warn("[Brumavale Anim] Nenhuma junta encontrada em " .. character:GetFullName())
+        end
+    end
     combatAnimations[character] = {
         action=action, combo=attackCombo[character] or 1, started=os.clock(), duration=animationDurations[action],
-        motors={
-            right=jointEntry(character, "RightShoulder", "Right Shoulder"),
-            left=jointEntry(character, "LeftShoulder", "Left Shoulder"),
-            waist=jointEntry(character, "Waist", "RootJoint", "Root Joint"),
-            neck=jointEntry(character, "Neck"),
-        },
+        motors=joints,
     }
 end
+
+-- Diagnostic stays visible: proves whether a real avatar rig receives poses.
+local animStatus = Instance.new("TextLabel")
+animStatus.Name = "AnimationStatus"
+animStatus.Size = UDim2.fromOffset(350, 26)
+animStatus.AnchorPoint = Vector2.new(0.5, 0)
+animStatus.Position = UDim2.new(0.5, 0, 0, 70)
+animStatus.BackgroundTransparency = 0.3
+animStatus.BackgroundColor3 = Color3.fromRGB(20, 30, 39)
+animStatus.TextColor3 = Color3.fromRGB(255, 223, 142)
+animStatus.TextSize = 13
+animStatus.Font = Enum.Font.GothamBold
+animStatus.Text = "Brumavale Anim: aguardando teste"
+animStatus.Parent = gui
+local function refreshAnimationStatus()
+    animStatus.Text = string.format("ANIM %s | juntas %s/4 | %s",
+        tostring(gui:GetAttribute("CombatRig") or "?"),
+        tostring(gui:GetAttribute("CombatJoints") or "?"),
+        tostring(gui:GetAttribute("CombatAction") or "aguardando"))
+end
+gui:GetAttributeChangedSignal("CombatAction"):Connect(refreshAnimationStatus)
+local animTest = Instance.new("TextButton")
+animTest.Name = "TestPlayerAnimation"
+animTest.Size = UDim2.fromOffset(170, 30)
+animTest.AnchorPoint = Vector2.new(0.5, 0)
+animTest.Position = UDim2.new(0.5, 0, 0, 99)
+animTest.BackgroundColor3 = Color3.fromRGB(52, 81, 91)
+animTest.TextColor3 = Color3.new(1, 1, 1)
+animTest.TextSize = 13
+animTest.Font = Enum.Font.GothamBold
+animTest.Text = "TESTAR ANIMACAO"
+animTest.Parent = gui
+animTest.Activated:Connect(function()
+    startCombatAnimation(player, "cleave")
+end)
 
 local function effectPart(size, cframe, color, life, shape)
     if #clientEffects:GetChildren() >= 150 then return nil end
