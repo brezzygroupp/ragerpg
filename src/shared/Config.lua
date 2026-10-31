@@ -1,6 +1,6 @@
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 5
+Config.Version = 6
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05
@@ -38,18 +38,18 @@ Config.Recipes = {
 	sword3 = {ingredients={ingot=6,plank=3,crystal=6},amount=1,fee=90,level=4},
 }
 Config.Regions = {
-	{id="town",name="Porto Bruma",center={0,0,0},size=900,safe=true,level=1,color={74,113,104}},
-	{id="meadow",name="Prados do Sol",center={0,0,1100},size=900,safe=false,level=1,color={109,151,77}},
-	{id="forest",name="Bosque Âmbar",center={1100,0,0},size=900,safe=false,level=2,color={55,101,78}},
-	{id="quarry",name="Pedreira Cinzenta",center={-1100,0,0},size=900,safe=false,level=3,color={116,119,129}},
-	{id="ruins",name="Ruínas da Aurora",center={0,0,-1100},size=900,safe=false,level=4,color={77,82,113}},
-	{id="marsh",name="Pântano Esquecido",center={-1100,0,1100},size=900,safe=false,level=3,color={68,105,86}},
-	{id="highlands",name="Planalto dos Ventos",center={1100,0,1100},size=900,safe=false,level=3,color={119,143,102}},
-	{id="frost",name="Picos de Gelo",center={1100,0,-1100},size=900,safe=false,level=5,color={170,195,204}},
-	{id="ash",name="Ermos de Cinza",center={-1100,0,-1100},size=900,safe=false,level=5,color={95,83,79}},
-	{id="canyon",name="Desfiladeiro Rubro",center={2200,0,0},size=900,safe=false,level=5,color={161,100,77}},
-	{id="grove",name="Jardim Luminoso",center={0,0,2200},size=900,safe=false,level=4,color={82,148,127}},
-	{id="citadel",name="Cidadela Perdida",center={0,0,-2200},size=900,safe=false,level=6,color={81,74,105}},
+	{id="town",name="Porto Bruma",center={0,0,0},size=1800,safe=true,level=1,color={74,113,104}},
+	{id="meadow",name="Prados do Sol",center={0,0,2200},size=1800,safe=false,level=1,color={109,151,77}},
+	{id="forest",name="Bosque Âmbar",center={2200,0,0},size=1800,safe=false,level=2,color={55,101,78}},
+	{id="quarry",name="Pedreira Cinzenta",center={-2200,0,0},size=1800,safe=false,level=3,color={116,119,129}},
+	{id="ruins",name="Ruínas da Aurora",center={0,0,-2200},size=1800,safe=false,level=4,color={77,82,113}},
+	{id="marsh",name="Pântano Esquecido",center={-2200,0,2200},size=1800,safe=false,level=3,color={68,105,86}},
+	{id="highlands",name="Planalto dos Ventos",center={2200,0,2200},size=1800,safe=false,level=3,color={119,143,102}},
+	{id="frost",name="Picos de Gelo",center={2200,0,-2200},size=1800,safe=false,level=5,color={170,195,204}},
+	{id="ash",name="Ermos de Cinza",center={-2200,0,-2200},size=1800,safe=false,level=5,color={95,83,79}},
+	{id="canyon",name="Desfiladeiro Rubro",center={4400,0,0},size=1800,safe=false,level=5,color={161,100,77}},
+	{id="grove",name="Jardim Luminoso",center={0,0,4400},size=1800,safe=false,level=4,color={82,148,127}},
+	{id="citadel",name="Cidadela Perdida",center={0,0,-4400},size=1800,safe=false,level=6,color={81,74,105}},
 }
 Config.Enemies = {
 	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18,attack={name="Salto viscoso",shape="circle",range=6,radius=6,windup=0.9,cooldown=1.9}},
