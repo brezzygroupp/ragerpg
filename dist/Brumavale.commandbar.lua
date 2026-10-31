@@ -2569,6 +2569,47 @@ local animationDurations = {basic=0.52, cleave=0.82, gather=0.68, potion=0.72, h
 local attackCombo = {}
 local lastLocalAttack = 0
 local swordVisuals = {}
+local swordSwings = {}
+local function swingSword(character, action, combo)
+    local sword = swordVisuals[character]
+    local grip = sword and sword:FindFirstChild("Grip")
+    local weld = grip and grip:FindFirstChild("HandMount")
+    if not weld or not weld:IsA("Weld") then return end
+    local base = weld:GetAttribute("BrumavaleBase") -- position is held in script state below
+    local swing = swordSwings[character]
+    if swing and swing.weld == weld then
+        for _, tween in ipairs(swing.tweens) do tween:Cancel() end
+        weld.C0 = swing.base
+    end
+    local rest = swing and swing.weld == weld and swing.base or weld.C0
+    local direction = combo == 2 and -1 or 1
+    local windup = action == "cleave" and 0.24 or 0.14
+    local release = action == "cleave" and 0.29 or 0.20
+    local raised = rest * CFrame.Angles(math.rad(-42), 0, math.rad(42 * direction))
+    local follow = rest * CFrame.Angles(math.rad(70), math.rad(18 * direction), math.rad(-72 * direction))
+    local sequence = {weld=weld, base=rest, tweens={}}
+    swordSwings[character] = sequence
+    local function tween(goal, seconds, easing)
+        local tw = TweenService:Create(weld, TweenInfo.new(seconds, easing or Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {C0=goal})
+        table.insert(sequence.tweens, tw)
+        return tw
+    end
+    local up = tween(raised, windup, Enum.EasingStyle.Quad)
+    up.Completed:Connect(function(state)
+        if state ~= Enum.PlaybackState.Completed or swordSwings[character] ~= sequence then return end
+        local strike = tween(follow, release)
+        strike.Completed:Connect(function(finished)
+            if finished ~= Enum.PlaybackState.Completed or swordSwings[character] ~= sequence then return end
+            local recovery = tween(rest, 0.20, Enum.EasingStyle.Sine)
+            recovery.Completed:Connect(function()
+                if swordSwings[character] == sequence then swordSwings[character] = nil end
+            end)
+            recovery:Play()
+        end)
+        strike:Play()
+    end)
+    up:Play()
+end
 
 local function ensureSwordVisual(character)
     local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
@@ -2625,7 +2666,10 @@ local function startCombatAnimation(actor, action)
         attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1
         comboIndex[character] = attackCombo[character]
     end
-    if action == "basic" or action == "cleave" then ensureSwordVisual(character) end
+    if action == "basic" or action == "cleave" then
+        ensureSwordVisual(character)
+        swingSword(character, action, attackCombo[character] or 1)
+    end
     local nativeOK, nativeMessage = playNativeAnimation(actor, action)
     if actor == player then
         gui:SetAttribute("NativeAnimation", nativeOK and nativeMessage or "FALHOU: " .. nativeMessage)
