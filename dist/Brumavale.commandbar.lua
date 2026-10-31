@@ -3684,6 +3684,11 @@ local ok, problem = xpcall(function()
     assert(world and world.Parent == workspace,"A geração do mapa não retornou um mundo válido.")
     world:SetAttribute("BrumavaleGenerated",true)
     assert(world:FindFirstChild("TownSpawn",true),"Spawn não gerado.")
+    assert(world:GetAttribute("Version") == 6, "Mundo antigo gerado: versão incorreta.")
+    assert(not world:FindFirstChild("PortalPlaza",true), "PortalPlaza antiga encontrada no novo mundo.")
+    local portalCount = #world:WaitForChild("Portals"):GetChildren()
+    assert(portalCount >= 12, "Rede de portais incompleta: " .. portalCount)
+    print("[BRUMAVALE V6] Mundo verificado | Portais: " .. portalCount .. " | Sem PortalPlaza")
     main.Enabled = true
     client.Enabled = true
     assert(main.Enabled and client.Enabled, "Os scripts de runtime não foram ativados.")
