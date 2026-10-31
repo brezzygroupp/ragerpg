@@ -2425,9 +2425,22 @@ local function motor(character, ...)
     return nil
 end
 
+-- Animate Motor6D.C0, not Transform: Roblox's Animator can overwrite Transform
+-- before the pose reaches the screen. Store each rig's original C0 for recovery.
 local function resetCombatAnimation(state)
-    for _, joint in pairs(state.motors or {}) do
-        if joint and joint.Parent then joint.Transform = CFrame.new() end
+    for _, entry in pairs(state.motors or {}) do
+        if entry and entry.joint and entry.joint.Parent then
+            entry.joint.C0 = entry.original
+        end
+    end
+end
+local function jointEntry(character, ...)
+    local joint = motor(character, ...)
+    return joint and {joint=joint, original=joint.C0} or nil
+end
+local function poseJoint(entry, offset)
+    if entry and entry.joint and entry.joint.Parent then
+        entry.joint.C0 = entry.original * offset
     end
 end
 
@@ -2447,10 +2460,10 @@ local function startCombatAnimation(actor, action)
     combatAnimations[character] = {
         action=action, combo=attackCombo[character] or 1, started=os.clock(), duration=animationDurations[action],
         motors={
-            right=motor(character, "RightShoulder", "Right Shoulder"),
-            left=motor(character, "LeftShoulder", "Left Shoulder"),
-            waist=motor(character, "Waist", "RootJoint", "Root Joint"),
-            neck=motor(character, "Neck"),
+            right=jointEntry(character, "RightShoulder", "Right Shoulder"),
+            left=jointEntry(character, "LeftShoulder", "Left Shoulder"),
+            waist=jointEntry(character, "Waist", "RootJoint", "Root Joint"),
+            neck=jointEntry(character, "Neck"),
         },
     }
 end
@@ -2576,10 +2589,12 @@ local function animateCombat(now)
             left = CFrame.Angles(math.rad(35 * recoil), 0, math.rad(-25 * recoil))
             waist = CFrame.Angles(math.rad(-18 * recoil), 0, math.rad(12 * recoil))
         end
-        if motors.right and motors.right.Parent then motors.right.Transform = right end
-        if motors.left and motors.left.Parent then motors.left.Transform = left end
-        if motors.waist and motors.waist.Parent then motors.waist.Transform = waist end
-        if motors.neck and motors.neck.Parent then motors.neck.Transform = neck end
+        -- Elbow and body poses remain visible even while the default idle/run
+        -- tracks play, and the original joints are restored after each action.
+        poseJoint(motors.right, right)
+        poseJoint(motors.left, left)
+        poseJoint(motors.waist, waist)
+        poseJoint(motors.neck, neck)
         if elapsed >= state.duration or not character.Parent then
             resetCombatAnimation(state)
             combatAnimations[character] = nil
