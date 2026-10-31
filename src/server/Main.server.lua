@@ -646,17 +646,18 @@ local function travel(player, id)
 	if not destination then return end
 	local validPortal = false
 	for _, portal in ipairs(world.Portals:GetChildren()) do
-		if portal:GetAttribute("Region") == id and portal.PrimaryPart
-			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 18 then
+		if portal:GetAttribute("Region") == id and portal:GetAttribute("OriginRegion") == (regionAt(root.Position) and regionAt(root.Position).id) and portal.PrimaryPart
+			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 16 then
 			validPortal = true; break
 		end
 	end
 	if not validPortal then notify(player, "Aproxime-se do portal dessa região."); return end
 	if not cooldown(player, "travel", 2) then return end
-	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 5, 20)
+	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 6, destination.safe and -120 or 90)
 	player.Character:PivotTo(CFrame.new(position))
 	root.AssemblyLinearVelocity, root.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
 	sessions[player].region = id
+    sessions[player].lastPortalAt = os.clock()
 	player:SetAttribute("Region", id)
 	update(player, "Você chegou a " .. destination.name .. ".")
 end
@@ -964,6 +965,19 @@ RunService.Heartbeat:Connect(function(dt)
 			local root, humanoid = body(player)
 			if root and session.ready then
 				local region = regionAt(root.Position)
+                -- Never allow walking, jumping or falling into another map.
+                -- Travel() is the only legitimate cross-region transfer.
+                if not region or (session.region and region.id ~= session.region) then
+                    local old
+                    for _, defined in ipairs(Config.Regions) do
+                        if defined.id == (session.region or "town") then old=defined break end
+                    end
+                    old=old or Config.Regions[1]
+                    local safePoint = Vector3.new(table.unpack(old.center)) + Vector3.new(0,7, old.safe and -120 or 90)
+                    player.Character:PivotTo(CFrame.new(safePoint))
+                    root.AssemblyLinearVelocity=Vector3.zero
+                    region=old
+                end
 				local id = region and region.id or "wilds"
 				if id ~= session.region then
 					session.region = id
