@@ -314,6 +314,29 @@ local function enemy(parent, kind, pos, index)
         ornament("Pauldron", Vector3.new(1.65, 1.2, 1.8), Vector3.new(1.85, 5.1, 0), C.darkStone, Enum.Material.Metal)
         if kind == "knight" then ornament("HelmetCrest", Vector3.new(0.5, 1, 2.2), Vector3.new(0, 7.6, 0), C.gold, Enum.Material.Metal) end
     end
+    -- Species-specific readable details, without requiring external assets.
+    if kind == "boar" then
+        ornament("Mane", Vector3.new(2.5, 1.1, 2.9), Vector3.new(0, 4.2, 0.6), C.wood, Enum.Material.Slate)
+        ornament("Nose", Vector3.new(1.6, 0.65, 0.35), Vector3.new(0, 3.05, -5.1), Color3.fromRGB(204,125,117))
+    elseif kind == "scorpion" then
+        for i = 1, 3 do
+            ornament("TailSegment", Vector3.new(1.1, 1.1, 1.3), Vector3.new(0, 3.3 + i*1.2, 3.3+i*0.23), Color3.fromRGB(139,56,49), Enum.Material.Slate)
+        end
+    elseif kind == "slime" then
+        ornament("InnerCore", Vector3.new(2.1, 1.9, 2.1), Vector3.new(0, 2, 0), Color3.fromRGB(152,241,178), Enum.Material.Neon, Enum.PartType.Ball)
+    elseif kind == "wisp" then
+        ornament("SpiritCore", Vector3.new(1.3, 1.3, 1.3), Vector3.new(0, 1.9, -0.3), C.cream, Enum.Material.Neon, Enum.PartType.Ball)
+    elseif kind == "icewolf" then
+        ornament("IceCrest", Vector3.new(1.05, 1.4, 2.8), Vector3.new(0, 4.25, 0.5), Color3.fromRGB(165,218,247), Enum.Material.Ice)
+    elseif kind == "ashgolem" or kind == "ancient" then
+        local glow = kind == "ashgolem" and Color3.fromRGB(244,91,44) or Color3.fromRGB(190,104,245)
+        for i = 1, 4 do
+            ornament("RiftGlow", Vector3.new(0.35, 1.5, 0.25), Vector3.new((i-2.5)*0.95, 4.2+i*0.5, -2.25), glow, Enum.Material.Neon)
+        end
+    elseif kind == "knight" then
+        ornament("Shield", Vector3.new(2.6, 3.5, 0.55), Vector3.new(-2.55, 3.8, -0.7), Color3.fromRGB(60,85,111), Enum.Material.Metal)
+        ornament("ShieldSigil", Vector3.new(1.25, 1.5, 0.15), Vector3.new(-2.55, 3.8, -1.05), C.gold, Enum.Material.Neon)
+    end
     m:SetAttribute("EnemyType", kind)
     m:SetAttribute("Health", def.health)
     m:SetAttribute("MaxHealth", def.health)
