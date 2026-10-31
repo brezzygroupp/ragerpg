@@ -82,7 +82,7 @@ local ok, problem = xpcall(function()
         end
     end
     local shared = make("Folder","Brumavale",ReplicatedStorage)
-    shared:SetAttribute("Version",3)
+    shared:SetAttribute("Version",4)
     make("ModuleScript","Config",shared,Sources.Config)
     make("ModuleScript","CombatMath",shared,Sources.CombatMath)
     make("RemoteEvent","Action",shared)
@@ -113,7 +113,7 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE v3 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
+print("BRUMAVALE v4 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
 print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")
