@@ -248,7 +248,9 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.75, 0.45, 0.2), pos + Vector3.new(x * 0.8, 10.2, -1.6), C.teal, Enum.Material.Neon))
         end
     else
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), (kind == "knight" and Color3.fromRGB(56,74,102) or Color3.fromRGB(105,62,68))))
+        local armorColor = kind == "knight" and Color3.fromRGB(56, 74, 102) or Color3.fromRGB(105, 62, 68)
+        local rootPart = part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), armorColor)
+        m.PrimaryPart = noCollision(rootPart)
         noCollision(part(m, "Head", Vector3.new(1.8, 1.8, 1.8), pos + Vector3.new(0, 6.3, 0), Color3.fromRGB(196, 156, 118)))
         noCollision(part(m, "Hood", Vector3.new(2, 0.7, 2), pos + Vector3.new(0, 7.35, 0), C.darkStone))
         noCollision(part(m, "Mask", Vector3.new(1.9, 0.7, 0.3), pos + Vector3.new(0, 5.95, -0.95), C.darkStone))
