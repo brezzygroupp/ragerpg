@@ -1835,11 +1835,13 @@ local function poseEnemy(record, now, moving, distance)
     end
 end
 
+local mobIndex = 0
 for _, model in ipairs(world.Enemies:GetChildren()) do
 	local config = Config.Enemies[model:GetAttribute("EnemyType")]
 	if model:IsA("Model") and model.PrimaryPart and config then
+        mobIndex += 1
 		local record = {
-			model=model, config=config, health=config.health, home=model:GetPivot(),
+			model=model, index=mobIndex, config=config, health=config.health, home=model:GetPivot(),
 			appearance=savedAppearance(model), rig=captureEnemyRig(model), phase=#model.Name * 0.71, nextAttack=0, attack=nil, target=nil,
 		}
 		mobs[model] = record
@@ -2254,7 +2256,7 @@ RunService.Heartbeat:Connect(function(dt)
         -- freeze indefinitely while trying to move toward the exact same point.
         local inRange = targetRoot ~= nil and flat.Magnitude <= attackRange
         if targetHumanoid and inRange and now >= (record.nextAttack or 0)
-            and lineOfSight(target.Character, model) then
+            and (lineOfSight(target.Character, model) or flat.Magnitude < 7) then
             startMonsterAttack(record, targetRoot, now)
         else
             -- Soft separation keeps enemies from occupying each other's space.
@@ -2266,10 +2268,10 @@ RunService.Heartbeat:Connect(function(dt)
                     local difference = position - otherModel.PrimaryPart.Position
                     local horizontal = Vector3.new(difference.X, 0, difference.Z)
                     local distance = horizontal.Magnitude
-                    local clearance = 7
+                    local clearance = (record.config.health >= 300 or other.config.health >= 300) and 9 or 6.8
                     if distance < clearance then
                         if distance < 0.1 then
-                            local angle = (#model.Name * 1.91 + #otherModel.Name * 0.61)
+                            local angle = record.index * 2.399963 + other.index * 0.71
                             horizontal = Vector3.new(math.cos(angle), 0, math.sin(angle))
                             distance = 1
                         end
@@ -2280,9 +2282,9 @@ RunService.Heartbeat:Connect(function(dt)
             end
             if neighbors > 0 then push = push / math.sqrt(neighbors) end
             local seek = flat.Magnitude > stopDistance and flat.Unit or Vector3.zero
-            local desired = seek + push * 1.9
+            local desired = seek + push * 2.4
             if desired.Magnitude > 0.02 then
-                local velocity = desired.Unit * math.min(record.config.speed * step, math.max(0.5, flat.Magnitude))
+                local velocity = desired.Unit * math.min(record.config.speed * step, math.max(2, flat.Magnitude))
                 local nextPosition = model:GetPivot().Position + velocity
                 model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + desired.Unit))
             end
