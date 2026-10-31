@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 5
+local VERSION = 6
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
@@ -417,37 +417,52 @@ local function portal(parent, pos, region, name, color, rotation)
 end
 
 local function mountainRim(ground, decorations, region, center, size, rng)
-    -- Four cliff walls create actual physical isolation between maps.
-    -- Irregular peaks break the silhouette; walkable interiors remain clear.
-    local rim = model(ground, "MountainBoundary_" .. region.id)
-    local stone = region.id == "frost" and Color3.fromRGB(160,188,204)
-        or region.id == "ash" and Color3.fromRGB(90,76,75)
-        or region.id == "canyon" and Color3.fromRGB(150,88,67)
-        or C.darkStone
-    local height = region.safe and 115 or 165
-    for _, side in ipairs({-1,1}) do
-        part(rim, "CliffWall", Vector3.new(size + 36, height, 32), center + Vector3.new(0, height/2, side*(size/2-13)), stone, Enum.Material.Rock)
-        part(rim, "CliffWall", Vector3.new(32, height, size + 36), center + Vector3.new(side*(size/2-13), height/2, 0), stone, Enum.Material.Rock)
-    end
-    for i=1,30 do
-        local theta = (i/30)*math.pi*2
-        local radius = size*0.48
-        local x, z = math.cos(theta)*radius, math.sin(theta)*radius
-        local h = rng:NextNumber(85, 175) + (region.id=="frost" and 80 or 0)
-        local peak = part(rim, "AlpinePeak", Vector3.new(rng:NextNumber(42,76), h, rng:NextNumber(42,76)),
-            center + Vector3.new(x,h/2+12,z), stone, Enum.Material.Rock, Enum.PartType.Ball)
-        peak.CFrame = peak.CFrame*CFrame.Angles(rng:NextNumber(-0.3,0.3),rng:NextNumber(0,math.pi),rng:NextNumber(-0.3,0.3))
-        if region.id=="frost" and i%3==0 then
-            noCollision(part(rim,"SnowCap",Vector3.new(27,18,29),center+Vector3.new(x,h+8,z),Color3.fromRGB(230,240,244),Enum.Material.Ice,Enum.PartType.Ball))
+    local rim = model(ground, "BiomeCliffs_" .. region.id)
+    local palette = {
+        frost={Color3.fromRGB(151,183,205),Enum.Material.Ice},
+        ash={Color3.fromRGB(78,67,68),Enum.Material.Basalt},
+        canyon={Color3.fromRGB(169,98,69),Enum.Material.Sandstone},
+        forest={Color3.fromRGB(73,94,78),Enum.Material.Rock},
+        marsh={Color3.fromRGB(70,91,75),Enum.Material.Ground},
+        grove={Color3.fromRGB(79,130,107),Enum.Material.Grass},
+        meadow={Color3.fromRGB(116,145,90),Enum.Material.Ground},
+    }
+    local style = palette[region.id] or {C.darkStone,Enum.Material.Rock}
+    for side=1,4 do
+        for i=1,20 do
+            local segment=size/20+2
+            local h=rng:NextNumber(90,175)
+            local axis=(i-.5)*size/20-size/2
+            local pos,sz
+            if side<3 then
+                pos=center+Vector3.new(axis,h/2,(side==1 and -1 or 1)*(size/2-20))
+                sz=Vector3.new(segment,h,54)
+            else
+                pos=center+Vector3.new((side==3 and -1 or 1)*(size/2-20),h/2,axis)
+                sz=Vector3.new(54,h,segment)
+            end
+            part(rim,"RockFace",sz,pos,style[1],style[2])
+            local wedge=Instance.new("WedgePart")
+            wedge.Name="Ridgeline"
+            wedge.Anchored=true
+            wedge.Size=Vector3.new(sz.X,rng:NextNumber(15,42),sz.Z)
+            wedge.Color=style[1]
+            wedge.Material=style[2]
+            wedge.CFrame=CFrame.new(pos+Vector3.new(0,h/2+wedge.Size.Y/2,0))*CFrame.Angles(0,side<3 and 0 or math.pi/2,0)
+            wedge.Parent=rim
         end
     end
-    -- Interior hills are scenic, off the central roads and away from portals.
-    for i=1,24 do
-        local x,z = rng:NextNumber(-size*.38,size*.38),rng:NextNumber(-size*.38,size*.38)
-        if math.abs(x)>90 and math.abs(z)>90 then
-            local h=rng:NextNumber(12,48)
-            part(decorations,"Foothill",Vector3.new(rng:NextNumber(22,55),h,rng:NextNumber(22,55)),
-                center+Vector3.new(x,h*.38,z),rgb(region.color,C.grass),Enum.Material.Ground,Enum.PartType.Ball)
+    for i=1,30 do
+        local x,z=rng:NextNumber(-size*.4,size*.4),rng:NextNumber(-size*.4,size*.4)
+        if math.abs(x)>110 and math.abs(z)>110 then
+            local hill=Instance.new("WedgePart")
+            hill.Name="Hillside"
+            hill.Anchored=true
+            hill.Size=Vector3.new(rng:NextNumber(55,115),rng:NextNumber(14,48),rng:NextNumber(75,140))
+            hill.CFrame=CFrame.new(center+Vector3.new(x,hill.Size.Y/2,z))*CFrame.Angles(0,rng:NextNumber(0,6.28),0)
+            hill.Color=rgb(region.color,C.grass)
+            hill.Material=region.id=="frost" and Enum.Material.Snow or style[2]
+            hill.Parent=decorations
         end
     end
 end
@@ -522,7 +537,7 @@ function World.Build()
     -- The lagoon sits just above Roblox's default Baseplate, while all playable
     -- surfaces are lifted one stud below. A fresh Baseplate template therefore
     -- looks intentional without deleting or editing any user-owned object.
-    local water = noCollision(part(ground, "Lagoon", Vector3.new(6000, 1, 6000), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
+    local water = noCollision(part(ground, "Lagoon", Vector3.new(12500, 1, 12500), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
     water.Transparency = 0.25
     water.CastShadow = false
     water.CanTouch = false
