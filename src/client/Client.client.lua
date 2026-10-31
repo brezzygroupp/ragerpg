@@ -170,6 +170,42 @@ local function poseJoint(entry, offset)
     end
 end
 
+-- Use native Roblox AnimationTracks as the primary animation path.
+-- Default Roblox sword slash/lunge are keyframed and work on standard R15/R6 rigs.
+local nativeTracks = {}
+local nativeIds = {
+    R15 = {basic="522635514", cleave="522638767", gather="522635514", hit="522638767"},
+    R6 = {basic="129967390", cleave="129967478", gather="129967390", hit="129967478"},
+}
+local function playNativeAnimation(actor, action)
+    local character = actor.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return false, "sem Humanoid" end
+    local rigType = humanoid.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
+    local id = nativeIds[rigType][action]
+    if not id then return false, "sem animacao para " .. action end
+    local animator = humanoid:FindFirstChildOfClass("Animator")
+    if not animator then
+        animator = Instance.new("Animator")
+        animator.Parent = humanoid
+    end
+    local slot = nativeTracks[character]
+    if slot and slot.track then pcall(function() slot.track:Stop(0.08) end) end
+    local animation = Instance.new("Animation")
+    animation.Name = "Brumavale_" .. action
+    animation.AnimationId = "rbxassetid://" .. id
+    local ok, track = pcall(function() return animator:LoadAnimation(animation) end)
+    animation:Destroy()
+    if not ok or not track then
+        return false, tostring(track)
+    end
+    track.Priority = Enum.AnimationPriority.Action4
+    track.Looped = false
+    local played, err = pcall(function() track:Play(0.08, 1, action == "cleave" and 0.85 or 1.05) end)
+    if not played then return false, tostring(err) end
+    nativeTracks[character] = {track=track, action=action}
+    return true, "AnimationTrack " .. tostring(id)
+end
 local animationDurations = {basic=0.52, cleave=0.82, gather=0.68, potion=0.72, hit=0.34}
 local attackCombo = {}
 local lastLocalAttack = 0
@@ -228,6 +264,11 @@ local function startCombatAnimation(actor, action)
     if previous then resetCombatAnimation(previous) end
     if action == "basic" then attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1 end
     if action == "basic" or action == "cleave" then ensureSwordVisual(character) end
+    local nativeOK, nativeMessage = playNativeAnimation(actor, action)
+    if actor == player then
+        gui:SetAttribute("NativeAnimation", nativeOK and nativeMessage or "FALHOU: " .. nativeMessage)
+        if not nativeOK then warn("[Brumavale Anim] Falha no Animator: " .. nativeMessage) end
+    end
     local joints = {
         right=jointEntry(character, "RightShoulder", "Right Shoulder"),
         left=jointEntry(character, "LeftShoulder", "Left Shoulder"),
@@ -265,12 +306,13 @@ animStatus.Font = Enum.Font.GothamBold
 animStatus.Text = "Brumavale Anim: aguardando teste"
 animStatus.Parent = gui
 local function refreshAnimationStatus()
-    animStatus.Text = string.format("ANIM %s | juntas %s/4 | %s",
+    animStatus.Text = string.format("ANIM %s | joints %s | %s",
         tostring(gui:GetAttribute("CombatRig") or "?"),
         tostring(gui:GetAttribute("CombatJoints") or "?"),
-        tostring(gui:GetAttribute("CombatAction") or "aguardando"))
+        tostring(gui:GetAttribute("NativeAnimation") or "aguardando"))
 end
 gui:GetAttributeChangedSignal("CombatAction"):Connect(refreshAnimationStatus)
+gui:GetAttributeChangedSignal("NativeAnimation"):Connect(refreshAnimationStatus)
 local animTest = Instance.new("TextButton")
 animTest.Name = "TestPlayerAnimation"
 animTest.Size = UDim2.fromOffset(170, 30)
