@@ -7,6 +7,6 @@
     "src/server/Profiles.lua": "0271505a424667b62d89988c80f35d00ae3fc91ac08510db7843c5cbc2887e2e",
     "src/server/World.lua": "7a507e40d5a7cab329143fbd8ccd77f195f2b129c9fa77e81fd0e6cd370ca838",
     "src/server/Main.server.lua": "7058d68c2299af663c2d6e864953213607a98a39c8a81ce885ae459305cd2609",
-    "src/client/Client.client.lua": "cc4fc721a251bf3faa0680c033b8529dc3ba1e24f94a9c93b060e6e1e30606af"
+    "src/client/Client.client.lua": "f05cd291856406027bbdf7149b0896586a226ed8dec5b2a26325c5926aa36199"
   }
 }
