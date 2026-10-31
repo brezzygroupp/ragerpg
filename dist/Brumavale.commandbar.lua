@@ -8,7 +8,7 @@ local Sources = {}
 Sources.Config = [=[
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 4
+Config.Version = 5
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05
@@ -46,18 +46,18 @@ Config.Recipes = {
 	sword3 = {ingredients={ingot=6,plank=3,crystal=6},amount=1,fee=90,level=4},
 }
 Config.Regions = {
-	{id="town",name="Porto Bruma",center={0,0,0},size=500,safe=true,level=1,color={74,113,104}},
-	{id="meadow",name="Prados do Sol",center={0,0,550},size=500,safe=false,level=1,color={109,151,77}},
-	{id="forest",name="Bosque Âmbar",center={550,0,0},size=500,safe=false,level=2,color={55,101,78}},
-	{id="quarry",name="Pedreira Cinzenta",center={-550,0,0},size=500,safe=false,level=3,color={116,119,129}},
-	{id="ruins",name="Ruínas da Aurora",center={0,0,-550},size=500,safe=false,level=4,color={77,82,113}},
-	{id="marsh",name="Pântano Esquecido",center={-550,0,550},size=500,safe=false,level=3,color={68,105,86}},
-	{id="highlands",name="Planalto dos Ventos",center={550,0,550},size=500,safe=false,level=3,color={119,143,102}},
-	{id="frost",name="Picos de Gelo",center={550,0,-550},size=500,safe=false,level=5,color={170,195,204}},
-	{id="ash",name="Ermos de Cinza",center={-550,0,-550},size=500,safe=false,level=5,color={95,83,79}},
-	{id="canyon",name="Desfiladeiro Rubro",center={1100,0,0},size=500,safe=false,level=5,color={161,100,77}},
-	{id="grove",name="Jardim Luminoso",center={0,0,1100},size=500,safe=false,level=4,color={82,148,127}},
-	{id="citadel",name="Cidadela Perdida",center={0,0,-1100},size=500,safe=false,level=6,color={81,74,105}},
+	{id="town",name="Porto Bruma",center={0,0,0},size=900,safe=true,level=1,color={74,113,104}},
+	{id="meadow",name="Prados do Sol",center={0,0,1100},size=900,safe=false,level=1,color={109,151,77}},
+	{id="forest",name="Bosque Âmbar",center={1100,0,0},size=900,safe=false,level=2,color={55,101,78}},
+	{id="quarry",name="Pedreira Cinzenta",center={-1100,0,0},size=900,safe=false,level=3,color={116,119,129}},
+	{id="ruins",name="Ruínas da Aurora",center={0,0,-1100},size=900,safe=false,level=4,color={77,82,113}},
+	{id="marsh",name="Pântano Esquecido",center={-1100,0,1100},size=900,safe=false,level=3,color={68,105,86}},
+	{id="highlands",name="Planalto dos Ventos",center={1100,0,1100},size=900,safe=false,level=3,color={119,143,102}},
+	{id="frost",name="Picos de Gelo",center={1100,0,-1100},size=900,safe=false,level=5,color={170,195,204}},
+	{id="ash",name="Ermos de Cinza",center={-1100,0,-1100},size=900,safe=false,level=5,color={95,83,79}},
+	{id="canyon",name="Desfiladeiro Rubro",center={2200,0,0},size=900,safe=false,level=5,color={161,100,77}},
+	{id="grove",name="Jardim Luminoso",center={0,0,2200},size=900,safe=false,level=4,color={82,148,127}},
+	{id="citadel",name="Cidadela Perdida",center={0,0,-2200},size=900,safe=false,level=6,color={81,74,105}},
 }
 Config.Enemies = {
 	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18,attack={name="Salto viscoso",shape="circle",range=6,radius=6,windup=0.9,cooldown=1.9}},
@@ -646,7 +646,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 4
+local VERSION = 5
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
@@ -1044,6 +1044,7 @@ end
 local function portal(parent, pos, region, name, color, rotation)
     local m = model(parent, "Gate_" .. region)
     m:SetAttribute("Region", region)
+    m:SetAttribute("Gateway", true)
     m.PrimaryPart = noCollision(part(m, "TravelStone", Vector3.new(9, 0.5, 9), pos + Vector3.new(0, 0.25, 0), color, Enum.Material.Neon))
     for _, x in ipairs({-6.4, 6.4}) do
         part(m, "Pillar", Vector3.new(2.4, 11, 3), pos + Vector3.new(x, 5.5, 0), C.darkStone, Enum.Material.Slate)
@@ -1054,6 +1055,42 @@ local function portal(parent, pos, region, name, color, rotation)
     prompt(m.PrimaryPart, "TravelPrompt", "Viajar", name, 0.4)
     if rotation then m:PivotTo(m.PrimaryPart.CFrame * CFrame.Angles(0, rotation, 0)) end
     return m
+end
+
+local function mountainRim(ground, decorations, region, center, size, rng)
+    -- Four cliff walls create actual physical isolation between maps.
+    -- Irregular peaks break the silhouette; walkable interiors remain clear.
+    local rim = model(ground, "MountainBoundary_" .. region.id)
+    local stone = region.id == "frost" and Color3.fromRGB(160,188,204)
+        or region.id == "ash" and Color3.fromRGB(90,76,75)
+        or region.id == "canyon" and Color3.fromRGB(150,88,67)
+        or C.darkStone
+    local height = region.safe and 115 or 165
+    for _, side in ipairs({-1,1}) do
+        part(rim, "CliffWall", Vector3.new(size + 36, height, 32), center + Vector3.new(0, height/2, side*(size/2-13)), stone, Enum.Material.Rock)
+        part(rim, "CliffWall", Vector3.new(32, height, size + 36), center + Vector3.new(side*(size/2-13), height/2, 0), stone, Enum.Material.Rock)
+    end
+    for i=1,30 do
+        local theta = (i/30)*math.pi*2
+        local radius = size*0.48
+        local x, z = math.cos(theta)*radius, math.sin(theta)*radius
+        local h = rng:NextNumber(85, 175) + (region.id=="frost" and 80 or 0)
+        local peak = part(rim, "AlpinePeak", Vector3.new(rng:NextNumber(42,76), h, rng:NextNumber(42,76)),
+            center + Vector3.new(x,h/2+12,z), stone, Enum.Material.Rock, Enum.PartType.Ball)
+        peak.CFrame = peak.CFrame*CFrame.Angles(rng:NextNumber(-0.3,0.3),rng:NextNumber(0,math.pi),rng:NextNumber(-0.3,0.3))
+        if region.id=="frost" and i%3==0 then
+            noCollision(part(rim,"SnowCap",Vector3.new(27,18,29),center+Vector3.new(x,h+8,z),Color3.fromRGB(230,240,244),Enum.Material.Ice,Enum.PartType.Ball))
+        end
+    end
+    -- Interior hills are scenic, off the central roads and away from portals.
+    for i=1,24 do
+        local x,z = rng:NextNumber(-size*.38,size*.38),rng:NextNumber(-size*.38,size*.38)
+        if math.abs(x)>90 and math.abs(z)>90 then
+            local h=rng:NextNumber(12,48)
+            part(decorations,"Foothill",Vector3.new(rng:NextNumber(22,55),h,rng:NextNumber(22,55)),
+                center+Vector3.new(x,h*.38,z),rgb(region.color,C.grass),Enum.Material.Ground,Enum.PartType.Ball)
+        end
+    end
 end
 
 local function bridge(parent, pos, alongX)
@@ -1126,7 +1163,7 @@ function World.Build()
     -- The lagoon sits just above Roblox's default Baseplate, while all playable
     -- surfaces are lifted one stud below. A fresh Baseplate template therefore
     -- looks intentional without deleting or editing any user-owned object.
-    local water = noCollision(part(ground, "Lagoon", Vector3.new(2900, 1, 2900), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
+    local water = noCollision(part(ground, "Lagoon", Vector3.new(6000, 1, 6000), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
     water.Transparency = 0.25
     water.CastShadow = false
     water.CanTouch = false
@@ -1136,13 +1173,16 @@ function World.Build()
         local color = rgb(region.color, C.grass)
         local land = part(ground, "Island_" .. region.id, Vector3.new(size, 8, size), center + Vector3.new(0, -3.95, 0), color, region.id == "quarry" and Enum.Material.Slate or Enum.Material.Grass)
         land:SetAttribute("Region", region.id)
+        mountainRim(ground, decor, region, center, size, rng)
         part(ground, "Cliff_" .. region.id, Vector3.new(size - 6, 18, size - 6), center + Vector3.new(0, -15, 0), C.darkStone, Enum.Material.Slate)
         -- The cardinal roads align with all inter-island bridges and remain clear.
         part(ground, "RoadNS", Vector3.new(14, 0.12, size), center + Vector3.new(0, 0.06, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         part(ground, "RoadEW", Vector3.new(size, 0.1, 14), center + Vector3.new(0, 0.05, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         regionTitle(decor, region, center)
         if not region.safe then
-            portal(portals, center + Vector3.new(-24, 0, 8), "town", "Voltar a Brumavale", C.teal)
+            local exit = portal(portals, center + Vector3.new(0, 0, 65), "town", "Voltar a Porto Bruma", C.teal)
+            exit:SetAttribute("OriginRegion", region.id)
+            exit:SetAttribute("ArrivalOffset", Vector3.new(0,0,82))
         end
     end
     -- Expanded islands are connected through travel portals instead of short bridges.
@@ -1182,16 +1222,24 @@ function World.Build()
     for _, location in ipairs({{-18, 15}, {18, 15}, {-56, 24}, {56, 24}, {-20, -50}, {20, -50}}) do
         lantern(decor, Vector3.new(location[1], 0, location[2]))
     end
-    local townGates = {
-        {"meadow", Vector3.new(0, 0, 88)}, {"forest", Vector3.new(88, 0, 0)},
-        {"quarry", Vector3.new(-88, 0, 0)}, {"ruins", Vector3.new(0, 0, -88)},
-        {"marsh", Vector3.new(-100, 0, 93)}, {"highlands", Vector3.new(100, 0, 93)},
-        {"frost", Vector3.new(100, 0, -93)}, {"ash", Vector3.new(-100, 0, -93)},
-        {"canyon", Vector3.new(108, 0, 45)}, {"grove", Vector3.new(0, 0, 111)}, {"citadel", Vector3.new(0, 0, -111)},
-    }
-    for _, entry in ipairs(townGates) do
-        local region = assert(regionsById[entry[1]], "Missing region " .. entry[1])
-        portal(portals, entry[2], region.id, region.name, rgb(region.color, C.teal), entry[2].X ~= 0 and math.pi / 2 or nil)
+    -- Dedicated portal plaza: evenly spaced, every gate has a clear approach.
+    local townGates = {}
+    local destinations = {}
+    for _, region in ipairs(Config.Regions) do if not region.safe then table.insert(destinations,region) end end
+    local columns = 6
+    for index, region in ipairs(destinations) do
+        local column = (index-1)%columns
+        local line = math.floor((index-1)/columns)
+        local x = (column-2.5)*35
+        local z = -160 - line*45
+        local pos = Vector3.new(x,0,z)
+        local gate = portal(portals,pos,region.id,region.name,rgb(region.color,C.teal),nil)
+        gate:SetAttribute("OriginRegion","town")
+        gate:SetAttribute("ArrivalOffset", Vector3.new(0,0,90))
+    end
+    part(ground,"PortalPlaza",Vector3.new(240,.2,135),Vector3.new(0,.1,-183),Color3.fromRGB(117,119,120),Enum.Material.Cobblestone)
+    for _, x in ipairs({-116,116}) do
+        lantern(decor,Vector3.new(x,0,-183))
     end
 
     -- Resource placements are curated around the roads, never on arrival areas.
@@ -1984,17 +2032,18 @@ local function travel(player, id)
 	if not destination then return end
 	local validPortal = false
 	for _, portal in ipairs(world.Portals:GetChildren()) do
-		if portal:GetAttribute("Region") == id and portal.PrimaryPart
-			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 18 then
+		if portal:GetAttribute("Region") == id and portal:GetAttribute("OriginRegion") == (regionAt(root.Position) and regionAt(root.Position).id) and portal.PrimaryPart
+			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 16 then
 			validPortal = true; break
 		end
 	end
 	if not validPortal then notify(player, "Aproxime-se do portal dessa região."); return end
 	if not cooldown(player, "travel", 2) then return end
-	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 5, 20)
+	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 6, destination.safe and -120 or 90)
 	player.Character:PivotTo(CFrame.new(position))
 	root.AssemblyLinearVelocity, root.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
 	sessions[player].region = id
+    sessions[player].lastPortalAt = os.clock()
 	player:SetAttribute("Region", id)
 	update(player, "Você chegou a " .. destination.name .. ".")
 end
@@ -2302,6 +2351,19 @@ RunService.Heartbeat:Connect(function(dt)
 			local root, humanoid = body(player)
 			if root and session.ready then
 				local region = regionAt(root.Position)
+                -- Never allow walking, jumping or falling into another map.
+                -- Travel() is the only legitimate cross-region transfer.
+                if not region or (session.region and region.id ~= session.region) then
+                    local old
+                    for _, defined in ipairs(Config.Regions) do
+                        if defined.id == (session.region or "town") then old=defined break end
+                    end
+                    old=old or Config.Regions[1]
+                    local safePoint = Vector3.new(table.unpack(old.center)) + Vector3.new(0,7, old.safe and -120 or 90)
+                    player.Character:PivotTo(CFrame.new(safePoint))
+                    root.AssemblyLinearVelocity=Vector3.zero
+                    region=old
+                end
 				local id = region and region.id or "wilds"
 				if id ~= session.region then
 					session.region = id
