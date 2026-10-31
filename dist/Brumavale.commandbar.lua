@@ -93,7 +93,6 @@ function Config.LevelForXP(xp)
 	return math.min(50, math.floor((1 + math.sqrt(1 + 4 * math.max(0,xp) / 75)) / 2))
 end
 return Config
-
 ]=]
 
 Sources.CombatMath = [=[
@@ -1255,7 +1254,6 @@ function World.Build()
 end
 
 return World
-
 ]=]
 
 Sources.Main = [=[
