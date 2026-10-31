@@ -185,6 +185,15 @@ test("balance tables contain valid references and no direct buy-sell arbitrage",
 	for _,node in pairs(Config.Nodes) do assert(Config.Items[node.item]) end
 	for _,enemy in pairs(Config.Enemies) do
 		for id in pairs(enemy.loot) do assert(Config.Items[id]) end
+		local attack=enemy.attack
+		assert(type(attack)=="table" and (attack.shape=="circle" or attack.shape=="cone" or attack.shape=="line"))
+		assert(type(attack.name)=="string" and attack.name~="")
+		assert(type(attack.range)=="number" and attack.range>=4 and attack.range<=20)
+		assert(type(attack.windup)=="number" and attack.windup>=0.5 and attack.windup<=2)
+		assert(type(attack.cooldown)=="number" and attack.cooldown>=attack.windup)
+		if attack.shape=="circle" then assert(type(attack.radius)=="number" and attack.radius<=attack.range) end
+		if attack.shape=="cone" then assert(type(attack.angle)=="number" and attack.angle>=20 and attack.angle<=120) end
+		if attack.shape=="line" then assert(type(attack.width)=="number" and attack.width>=2 and attack.width<=10) end
 	end
 end)
 print(string.format("%d tests passed",passed))

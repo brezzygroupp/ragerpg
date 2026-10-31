@@ -17,5 +17,6 @@ for source in files:
         raise SystemExit(f"Compile failed: {source}\n{result.stderr}\n{result.stdout}")
     print(f"COMPILE {source.relative_to(root)}")
 subprocess.run([args.luau, "tests/economy.spec.lua"], cwd=root, check=True)
+subprocess.run([args.luau, "tests/combat_math.spec.lua"], cwd=root, check=True)
 subprocess.run(["python3", "tests/run_profiles.py", "--luau", args.luau], cwd=root, check=True)
 subprocess.run(["python3", "tests/installer.spec.py"], cwd=root, check=True)

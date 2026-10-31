@@ -13,6 +13,7 @@ local Config = require(package:WaitForChild("Config"))
 local Action = package:WaitForChild("Action")
 local State = package:WaitForChild("State")
 local GetState = package:WaitForChild("GetState")
+local FX = package:WaitForChild("FX")
 local world = workspace:WaitForChild("BrumavaleWorld")
 local mouse = player:GetMouse()
 local palette = {
@@ -34,6 +35,8 @@ local normalCameraSubject
 local panelOpen = false
 local quantityText, priceText
 local renderPage, updateHUD, openPanel, toast
+local combatAnimations = {}
+local cameraShake = 0
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrumavaleUI"
@@ -42,6 +45,15 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 20
 gui.Parent = player:WaitForChild("PlayerGui")
 gui:SetAttribute("Version", Config.Version)
+
+local damageFlash = Instance.new("Frame")
+damageFlash.Name = "DamageFlash"
+damageFlash.Size = UDim2.fromScale(1, 1)
+damageFlash.BackgroundColor3 = Color3.fromRGB(205, 53, 55)
+damageFlash.BackgroundTransparency = 1
+damageFlash.BorderSizePixel = 0
+damageFlash.ZIndex = 90
+damageFlash.Parent = gui
 
 local function create(className, parent, properties)
     local object = Instance.new(className)
@@ -109,6 +121,231 @@ local function characterParts()
     if not character then return nil, nil end
     return character:FindFirstChild("HumanoidRootPart"), character:FindFirstChildOfClass("Humanoid")
 end
+
+-- Combat animation is procedural so the project needs no uploaded animation IDs.
+-- Motor6D.Transform is written locally after the default Animator and released at
+-- the end of each short action, preserving Roblox's normal locomotion afterward.
+local clientEffects = Instance.new("Folder")
+clientEffects.Name = "BrumavaleClientEffects"
+clientEffects.Parent = world
+
+local function motor(character, ...)
+    for index = 1, select("#", ...) do
+        local joint = character:FindFirstChild(select(index, ...), true)
+        if joint and joint:IsA("Motor6D") then return joint end
+    end
+    return nil
+end
+
+local function resetCombatAnimation(state)
+    for _, joint in pairs(state.motors or {}) do
+        if joint and joint.Parent then joint.Transform = CFrame.new() end
+    end
+end
+
+local animationDurations = {basic=0.48, cleave=0.78, gather=0.68, potion=0.72, hit=0.3}
+local function startCombatAnimation(actor, action)
+    if typeof(actor) ~= "Instance" or not actor:IsA("Player") or actor.Parent ~= Players or type(action) ~= "string" then return end
+    local character = actor.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if not character or not humanoid or humanoid.Health <= 0 or not animationDurations[action] then return end
+    local localRoot = characterParts()
+    local actorRoot = character:FindFirstChild("HumanoidRootPart")
+    if actor ~= player and (not localRoot or not actorRoot or (localRoot.Position - actorRoot.Position).Magnitude > 160) then return end
+    local previous = combatAnimations[character]
+    if previous then resetCombatAnimation(previous) end
+    combatAnimations[character] = {
+        action=action, started=os.clock(), duration=animationDurations[action],
+        motors={
+            right=motor(character, "RightShoulder", "Right Shoulder"),
+            left=motor(character, "LeftShoulder", "Left Shoulder"),
+            waist=motor(character, "Waist", "RootJoint", "Root Joint"),
+            neck=motor(character, "Neck"),
+        },
+    }
+end
+
+local function effectPart(size, cframe, color, life, shape)
+    if #clientEffects:GetChildren() >= 150 then return nil end
+    local part = Instance.new("Part")
+    part.Name = "CombatFX"
+    part.Size = size
+    part.CFrame = cframe
+    part.Color = color
+    part.Material = Enum.Material.Neon
+    part.Transparency = 0.18
+    part.Anchored = true
+    part.CanCollide = false
+    part.CanTouch = false
+    part.CanQuery = false
+    part.CastShadow = false
+    if shape then part.Shape = shape end
+    part.Parent = clientEffects
+    Debris:AddItem(part, life or 0.5)
+    return part
+end
+
+local function burst(position, color, radius)
+    if typeof(position) ~= "Vector3" then return end
+    local localRoot = characterParts()
+    if not localRoot or (localRoot.Position - position).Magnitude > 170 then return end
+    radius = math.clamp(tonumber(radius) or 5, 2, 18)
+    for index = 1, 8 do
+        local angle = index * math.pi * 0.25
+        local direction = Vector3.new(math.cos(angle), 0.35 + (index % 2) * 0.2, math.sin(angle)).Unit
+        local part = effectPart(Vector3.new(0.28, 0.28, 2.4), CFrame.lookAt(position, position + direction), color, 0.42)
+        if part then
+            TweenService:Create(part, TweenInfo.new(0.38, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                CFrame=part.CFrame + direction * radius, Transparency=1, Size=Vector3.new(0.08, 0.08, 0.8),
+            }):Play()
+        end
+    end
+end
+
+local function actionEffect(actor, action, target)
+    local character = actor.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local localRoot = characterParts()
+    if actor ~= player and (not localRoot or (localRoot.Position - root.Position).Magnitude > 160) then return end
+    if action == "basic" then
+		local strikeCFrame = root.CFrame
+		if typeof(target) == "Instance" and target:IsA("Model") and target.PrimaryPart then
+			local delta = Vector3.new(target.PrimaryPart.Position.X - root.Position.X, 0, target.PrimaryPart.Position.Z - root.Position.Z)
+			if delta.Magnitude > 0.05 then strikeCFrame = CFrame.lookAt(root.Position, root.Position + delta.Unit) end
+		end
+        for index = -1, 1 do
+            local part = effectPart(Vector3.new(0.14, 5.5, 0.65), strikeCFrame * CFrame.new(index * 0.45, 1.2, -4.2) * CFrame.Angles(0, 0, math.rad(48 + index * 7)), palette.gold, 0.36)
+            if part then
+                TweenService:Create(part, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Transparency=1, Size=Vector3.new(0.05, 7, 0.2),
+                }):Play()
+            end
+        end
+    elseif action == "cleave" then
+        for index = 1, 18 do
+            local angle = index * math.pi * 2 / 18
+            local position = root.Position + Vector3.new(math.cos(angle) * 6.3, -2.65, math.sin(angle) * 6.3)
+            local tangent = Vector3.new(-math.sin(angle), 0, math.cos(angle))
+            local part = effectPart(Vector3.new(0.35, 0.16, 2.6), CFrame.lookAt(position, position + tangent), palette.gold, 0.52)
+            if part then
+                TweenService:Create(part, TweenInfo.new(0.45), {Transparency=1, Size=Vector3.new(0.1, 0.08, 3.8)}):Play()
+            end
+        end
+    elseif action == "gather" then
+        burst(root.Position + root.CFrame.LookVector * 3 + Vector3.new(0, 1.2, 0), palette.teal, 3.5)
+    elseif action == "potion" then
+        local orb = effectPart(Vector3.new(1.2, 1.2, 1.2), root.CFrame * CFrame.new(0, 1, -1.2), palette.green, 0.75, Enum.PartType.Ball)
+        if orb then
+            TweenService:Create(orb, TweenInfo.new(0.65, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                CFrame=orb.CFrame + Vector3.new(0, 3.5, 0), Size=Vector3.new(3.5, 3.5, 3.5), Transparency=1,
+            }):Play()
+        end
+    end
+end
+
+local function animateCombat(now)
+    for character, state in pairs(combatAnimations) do
+        local elapsed = now - state.started
+        local progress = math.clamp(elapsed / state.duration, 0, 1)
+        local motors = state.motors
+        local right, left, waist, neck = CFrame.new(), CFrame.new(), CFrame.new(), CFrame.new()
+        if state.action == "basic" then
+            if progress < 0.28 then
+                local alpha = progress / 0.28
+                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)), alpha)
+                waist = CFrame.Angles(0, math.rad(35 * alpha), 0)
+            elseif progress < 0.62 then
+                local alpha = (progress - 0.28) / 0.34
+                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)), alpha)
+                waist = CFrame.Angles(0, math.rad(35 - 85 * alpha), 0)
+            else
+                local alpha = (progress - 0.62) / 0.38
+                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)):Lerp(CFrame.new(), alpha)
+                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha)), 0)
+            end
+        elseif state.action == "cleave" then
+            local swing = math.sin(progress * math.pi)
+            local spin = progress < 0.82 and (-55 + 190 * progress / 0.82) or (135 * (1 - (progress - 0.82) / 0.18))
+            right = CFrame.Angles(math.rad(-65 * swing), 0, math.rad(75 * swing))
+            left = CFrame.Angles(math.rad(-35 * swing), 0, math.rad(-35 * swing))
+            waist = CFrame.Angles(0, math.rad(spin), 0)
+        elseif state.action == "gather" then
+            local swing = math.sin(progress * math.pi)
+            right = CFrame.Angles(math.rad(-125 * swing), 0, math.rad(28 * swing))
+            left = CFrame.Angles(math.rad(-35 * swing), 0, math.rad(-18 * swing))
+            waist = CFrame.Angles(math.rad(-12 * swing), math.rad(-18 * swing), 0)
+        elseif state.action == "potion" then
+            local lift = math.sin(progress * math.pi)
+            right = CFrame.Angles(math.rad(-120 * lift), 0, math.rad(-35 * lift))
+            neck = CFrame.Angles(math.rad(-15 * lift), math.rad(8 * lift), 0)
+        elseif state.action == "hit" then
+            local recoil = math.sin(progress * math.pi)
+            right = CFrame.Angles(math.rad(35 * recoil), 0, math.rad(25 * recoil))
+            left = CFrame.Angles(math.rad(35 * recoil), 0, math.rad(-25 * recoil))
+            waist = CFrame.Angles(math.rad(-18 * recoil), 0, math.rad(12 * recoil))
+        end
+        if motors.right and motors.right.Parent then motors.right.Transform = right end
+        if motors.left and motors.left.Parent then motors.left.Transform = left end
+        if motors.waist and motors.waist.Parent then motors.waist.Transform = waist end
+        if motors.neck and motors.neck.Parent then motors.neck.Transform = neck end
+        if elapsed >= state.duration or not character.Parent then
+            resetCombatAnimation(state)
+            combatAnimations[character] = nil
+        end
+    end
+end
+
+RunService:BindToRenderStep("BrumavaleCombatAnimation", Enum.RenderPriority.Character.Value + 1, function()
+    animateCombat(os.clock())
+end)
+
+FX.OnClientEvent:Connect(function(event, payload)
+    if type(event) ~= "string" or type(payload) ~= "table" then return end
+    if event == "playerAttack" or event == "playerAction" then
+        local actor = payload.player
+        local action = payload.skill or payload.action
+        if typeof(actor) == "Instance" and actor:IsA("Player") and actor.Parent == Players and type(action) == "string" then
+            startCombatAnimation(actor, action)
+            actionEffect(actor, action, payload.target)
+        end
+    elseif event == "monsterWindup" then
+		local monster = payload.monster
+		local enemies = world:FindFirstChild("Enemies")
+		if typeof(monster) == "Instance" and monster:IsA("Model") and enemies and monster.Parent == enemies then
+			local highlight = Instance.new("Highlight")
+			highlight.Name = "WindupHighlight"
+			highlight.Adornee = monster
+			highlight.FillColor = palette.red
+			highlight.OutlineColor = palette.gold
+			highlight.FillTransparency = 0.88
+			highlight.OutlineTransparency = 0.25
+			highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+			highlight.Parent = clientEffects
+			local life = math.clamp(tonumber(payload.windup) or 0.8, 0.3, 3)
+			TweenService:Create(highlight, TweenInfo.new(life), {FillTransparency=0.55, OutlineTransparency=0.05}):Play()
+			Debris:AddItem(highlight, life + 0.12)
+		end
+    elseif event == "monsterImpact" then
+        local position = payload.position
+        if typeof(position) ~= "Vector3" and typeof(payload.monster) == "Instance" and payload.monster:IsA("Model") and payload.monster.PrimaryPart then
+            position = payload.monster.PrimaryPart.Position
+        end
+        burst(position, palette.red, payload.radius or 6)
+    elseif event == "playerHit" then
+        local victim = payload.player
+        if typeof(victim) ~= "Instance" or not victim:IsA("Player") or victim.Parent ~= Players then return end
+        startCombatAnimation(victim, "hit")
+        local character = victim.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        if root then burst(root.Position, palette.red, 3.5) end
+        if victim == player then
+            cameraShake = math.min(1.2, cameraShake + math.clamp((tonumber(payload.damage) or 8) / 22, 0.25, 0.8))
+            damageFlash.BackgroundTransparency = 0.78
+            TweenService:Create(damageFlash, TweenInfo.new(0.45), {BackgroundTransparency=1}):Play()
+        end
+    end
+end)
 
 -- HUD discreto, com áreas livres para o joystick e salto do Roblox.
 local identity = frame(gui, {Position = UDim2.fromOffset(16, 10), Size = UDim2.fromOffset(252, 102), BackgroundColor3 = palette.ink, BackgroundTransparency = 0.08})
@@ -388,7 +625,7 @@ local function showHelp()
         row(1, quest.title or "Jornada", (quest.description or "") .. "\n" .. tostring(quest.current or 0) .. "/" .. tostring(quest.target or 1) .. " · " .. tostring(quest.rewardSilver or 0) .. " prata / " .. tostring(quest.rewardXP or 0) .. " XP. Resgate junto ao mestre na cidade.", "!", palette.gold, quest.complete and "Resgatar" or nil, function() send("claim") end, false, 112)
     end
     row(2, "01  •  Colete e refine", "E nos recursos para coletar. Leve madeira, minério e fibras à oficina para refinar e fabricar equipamentos.", "01", palette.teal, nil, nil, false, 93)
-    row(3, "02  •  Equipe e lute", "I abre a mochila. Clique em um inimigo próximo para atacar; Q aplica corte em área; R usa uma poção. No celular, use os botões inferiores.", "02", palette.red, nil, nil, false, 105)
+    row(3, "02  •  Equipe, lute e desvie", "I abre a mochila. Clique em um inimigo próximo para atacar; Q usa corte em área; R usa poção. Saia dos círculos, cones e linhas vermelhas antes da barra do golpe inimigo completar.", "02", palette.red, nil, nil, false, 112)
     row(4, "03  •  Construa sua economia", "Venda recursos ao mercador ou anuncie itens para jogadores deste servidor. Vendas e fabricação exigem proximidade das bancas.", "03", palette.gold, nil, nil, false, 100)
     row(5, "Controles", "WASD / joystick: mover · Espaço: saltar · E: interagir · I: inventário · C: fabricar · M: mapa · V: câmera · Esc: fechar painel.", "⌨", palette.muted, nil, nil, false, 104)
     row(6, "Sobre esta versão", "Protótipo original com combate PvE e mercado por servidor. No Studio, o progresso é temporário. Servidores publicados usam salvamento quando disponível.", "i", palette.muted, nil, nil, false, 104)
@@ -561,6 +798,12 @@ RunService.RenderStepped:Connect(function(dt)
         camera.CameraType = Enum.CameraType.Scriptable
         camera.CFrame = CFrame.lookAt(focus + Vector3.new(44, 54, 44), focus)
         camera.Focus = CFrame.new(focus)
+    end
+    if camera and cameraShake > 0 then
+        local clock = os.clock() * 34
+        local offset = Vector3.new(math.noise(clock, 0, 0), math.noise(0, clock, 0), 0) * cameraShake * 0.22
+        camera.CFrame = camera.CFrame * CFrame.new(offset) * CFrame.Angles(0, 0, math.noise(clock, clock, 0) * cameraShake * 0.012)
+        cameraShake = math.max(0, cameraShake - dt * 3.8)
     end
     layoutClock = layoutClock + dt
     if layoutClock < 0.1 then return end

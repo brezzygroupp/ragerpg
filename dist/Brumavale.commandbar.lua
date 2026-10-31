@@ -8,7 +8,7 @@ local Sources = {}
 Sources.Config = [=[
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 2
+Config.Version = 3
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05
@@ -53,10 +53,10 @@ Config.Regions = {
 	{id="ruins",name="Ruínas da Aurora",center={0,0,-270},size=240,safe=false,level=4,color={77,82,113}},
 }
 Config.Enemies = {
-	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18},
-	wolf = {name="Lobo âmbar",health=78,damage=11,speed=13,xp=40,silver=14,loot={hide=2},aggro=40,respawn=23},
-	bandit = {name="Saqueador",health=105,damage=14,speed=10,xp=58,silver=22,loot={ore=2},aggro=38,respawn=26},
-	guardian = {name="Sentinela da aurora",health=240,damage=21,speed=8,xp=130,silver=60,loot={crystal=3},aggro=40,respawn=40},
+	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18,attack={name="Salto viscoso",shape="circle",range=6,radius=6,windup=0.9,cooldown=1.9}},
+	wolf = {name="Lobo âmbar",health=78,damage=11,speed=13,xp=40,silver=14,loot={hide=2},aggro=40,respawn=23,attack={name="Bote",shape="cone",range=9,angle=70,windup=0.7,cooldown=1.7}},
+	bandit = {name="Saqueador",health=105,damage=14,speed=10,xp=58,silver=22,loot={ore=2},aggro=38,respawn=26,attack={name="Corte frontal",shape="line",range=12,width=5,windup=1.0,cooldown=2.2}},
+	guardian = {name="Sentinela da aurora",health=240,damage=21,speed=8,xp=130,silver=60,loot={crystal=3},aggro=40,respawn=40,attack={name="Ruptura rúnica",shape="circle",range=14,radius=14,windup=1.5,cooldown=3.1}},
 }
 Config.Nodes = {
 	tree = {name="Árvore",item="wood",amount=3,respawn=18,xp=9,color={111,79,50}},
@@ -78,6 +78,49 @@ function Config.LevelForXP(xp)
 	return math.min(50, math.floor((1 + math.sqrt(1 + 4 * math.max(0,xp) / 75)) / 2))
 end
 return Config
+]=]
+
+Sources.CombatMath = [=[
+-- Pure 2D hit geometry shared by the authoritative server and local tests.
+local CombatMath = {}
+
+local function finite(value)
+	return type(value) == "number" and value == value and value > -math.huge and value < math.huge
+end
+
+function CombatMath.Contains(definition, originX, originZ, directionX, directionZ, pointX, pointZ)
+	if type(definition) ~= "table" then return false end
+	for _, value in ipairs({originX, originZ, directionX, directionZ, pointX, pointZ}) do
+		if not finite(value) then return false end
+	end
+	local offsetX, offsetZ = pointX - originX, pointZ - originZ
+	local distance = math.sqrt(offsetX * offsetX + offsetZ * offsetZ)
+	if definition.shape == "circle" then
+		local radius = definition.radius or definition.range
+		return finite(radius) and radius > 0 and distance <= radius
+	end
+	local directionLength = math.sqrt(directionX * directionX + directionZ * directionZ)
+	local range = definition.range
+	if directionLength <= 0.0001 or not finite(range) or range <= 0 then return false end
+	directionX, directionZ = directionX / directionLength, directionZ / directionLength
+	local forward = offsetX * directionX + offsetZ * directionZ
+	if forward < 0 or forward > range then return false end
+	local lateral = math.abs(offsetX * directionZ - offsetZ * directionX)
+	if definition.shape == "line" then
+		local width = definition.width
+		return finite(width) and width > 0 and lateral <= width * 0.5
+	end
+	if definition.shape == "cone" then
+		local angle = definition.angle
+		if not finite(angle) or angle <= 0 or angle >= 180 then return false end
+		if distance <= 0.0001 then return true end
+		local cosine = forward / distance
+		return cosine >= math.cos(math.rad(angle * 0.5))
+	end
+	return false
+end
+
+return CombatMath
 ]=]
 
 Sources.Economy = [=[
@@ -588,7 +631,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 2
+local VERSION = 3
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
@@ -1147,14 +1190,22 @@ local HttpService = game:GetService("HttpService")
 local shared = ReplicatedStorage:WaitForChild("Brumavale")
 shared:SetAttribute("ServerRuntime", "Starting")
 local Config = require(shared:WaitForChild("Config"))
+local CombatMath = require(shared:WaitForChild("CombatMath"))
 local Economy = require(script.Parent:WaitForChild("Economy"))
 local Profiles = require(script.Parent:WaitForChild("Profiles"))
 local world = require(script.Parent:WaitForChild("World")).Build()
 local actionRemote = shared:WaitForChild("Action")
 local stateRemote = shared:WaitForChild("State")
 local getState = shared:WaitForChild("GetState")
+local fxRemote = shared:WaitForChild("FX")
 local sessions, listings, mobs = {}, {}, {}
 local closing = false
+local effectsFolder = world:FindFirstChild("Effects")
+if not effectsFolder then
+	effectsFolder = Instance.new("Folder")
+	effectsFolder.Name = "Effects"
+	effectsFolder.Parent = world
+end
 
 local function integer(value, maximum)
 	return type(value) == "number" and value == value and value >= 1
@@ -1351,12 +1402,235 @@ local function updateEnemyLabel(record)
 	end
 end
 
+local TELEGRAPH_Y = 1.24
+local TELEGRAPH_RED = Color3.fromRGB(235, 72, 68)
+local TELEGRAPH_DARK = Color3.fromRGB(122, 30, 38)
+
+local function groundPosition(position)
+	local parameters = RaycastParams.new()
+	parameters.FilterType = Enum.RaycastFilterType.Include
+	parameters.FilterDescendantsInstances = {world.TerrainParts}
+	parameters.IgnoreWater = true
+	local result = workspace:Raycast(Vector3.new(position.X, position.Y + 28, position.Z), Vector3.new(0, -100, 0), parameters)
+	return result and (result.Position + Vector3.new(0, 0.08, 0)) or Vector3.new(position.X, TELEGRAPH_Y, position.Z)
+end
+
+local function flatDirection(from, to, fallback)
+	local delta = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
+	if delta.Magnitude > 0.05 then return delta.Unit end
+	local look = fallback or Vector3.new(0, 0, -1)
+	look = Vector3.new(look.X, 0, look.Z)
+	return look.Magnitude > 0.05 and look.Unit or Vector3.new(0, 0, -1)
+end
+
+local function telegraphPart(parent, name, size, cframe, shape)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.CFrame = cframe
+	part.Shape = shape or Enum.PartType.Block
+	part.Anchored, part.CanCollide, part.CanTouch, part.CanQuery = true, false, false, false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	part.Color = TELEGRAPH_DARK
+	part.Transparency = 0.56
+	part.Parent = parent
+	return part
+end
+
+local function createTelegraph(definition, origin, direction, windup)
+	local telegraph = Instance.new("Model")
+	telegraph.Name = "MonsterTelegraph"
+	telegraph:SetAttribute("Shape", definition.shape)
+	telegraph.Parent = effectsFolder
+	local surfaceOrigin = origin
+	if definition.shape == "circle" then
+		local radius = definition.radius or definition.range or 6
+		telegraphPart(telegraph, "Danger", Vector3.new(0.12, radius * 2, radius * 2),
+			CFrame.new(surfaceOrigin) * CFrame.Angles(0, 0, math.pi / 2), Enum.PartType.Cylinder)
+	elseif definition.shape == "line" then
+		local range, width = definition.range or 10, definition.width or 4
+		local center = surfaceOrigin + direction * (range * 0.5)
+		telegraphPart(telegraph, "Danger", Vector3.new(width, 0.12, range),
+			CFrame.lookAt(center, center + direction))
+	else
+		local range = definition.range or 9
+		local halfAngle = math.rad((definition.angle or 70) * 0.5)
+		local segments = 8
+		local segmentLength = range / segments
+		for index = 1, segments do
+			local distance = (index - 0.5) * segmentLength
+			local halfWidth = math.tan(halfAngle) * math.min(range, distance + segmentLength * 0.5)
+			local center = surfaceOrigin + direction * distance
+			telegraphPart(telegraph, "Danger", Vector3.new(math.max(0.4, halfWidth * 2), 0.12, segmentLength + 0.08),
+				CFrame.lookAt(center, center + direction))
+		end
+	end
+	for _, part in ipairs(telegraph:GetChildren()) do
+		if part:IsA("BasePart") then
+			TweenService:Create(part, TweenInfo.new(windup, Enum.EasingStyle.Linear), {
+				Color=TELEGRAPH_RED, Transparency=0.18,
+			}):Play()
+		end
+	end
+	return telegraph
+end
+
+local function createCastIndicator(record, definition, windup)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "AttackCast"
+	gui.Adornee = record.model.PrimaryPart
+	gui.Size = UDim2.fromOffset(176, 42)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 7, 0)
+	gui.AlwaysOnTop = true
+	gui.MaxDistance = 95
+	gui.Parent = record.model.PrimaryPart
+	local name = Instance.new("TextLabel")
+	name.Name = "AttackName"
+	name.Size = UDim2.new(1, 0, 0, 23)
+	name.BackgroundTransparency = 1
+	name.Font = Enum.Font.GothamBold
+	name.Text = string.upper(definition.name or "ATAQUE")
+	name.TextColor3 = Color3.fromRGB(255, 226, 202)
+	name.TextStrokeColor3 = Color3.fromRGB(55, 16, 24)
+	name.TextStrokeTransparency = 0.15
+	name.TextSize = 12
+	name.Parent = gui
+	local bar = Instance.new("Frame")
+	bar.Name = "CastBar"
+	bar.Position = UDim2.fromOffset(13, 26)
+	bar.Size = UDim2.new(1, -26, 0, 8)
+	bar.BorderSizePixel = 0
+	bar.BackgroundColor3 = Color3.fromRGB(51, 25, 31)
+	bar.Parent = gui
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(0, 1)
+	fill.BorderSizePixel = 0
+	fill.BackgroundColor3 = TELEGRAPH_RED
+	fill.Parent = bar
+	TweenService:Create(fill, TweenInfo.new(windup, Enum.EasingStyle.Linear), {Size=UDim2.fromScale(1, 1)}):Play()
+	return gui
+end
+
+local function cancelMonsterAttack(record)
+	local attackState = record.attack
+	if not attackState then return end
+	if attackState.telegraph and attackState.telegraph.Parent then attackState.telegraph:Destroy() end
+	if attackState.castGui and attackState.castGui.Parent then attackState.castGui:Destroy() end
+	record.attack = nil
+	record.model:SetAttribute("AttackState", "Idle")
+end
+
+local function positionInAttack(attackState, position)
+	return CombatMath.Contains(attackState.definition,
+		attackState.origin.X, attackState.origin.Z,
+		attackState.direction.X, attackState.direction.Z,
+		position.X, position.Z)
+end
+
+local function clearAttackPath(record, player, root, attackState)
+	local parameters = RaycastParams.new()
+	parameters.FilterType = Enum.RaycastFilterType.Exclude
+	local excluded = {record.model, world.Enemies, effectsFolder}
+	for _, currentPlayer in ipairs(Players:GetPlayers()) do
+		if currentPlayer.Character then table.insert(excluded, currentPlayer.Character) end
+	end
+	parameters.FilterDescendantsInstances = excluded
+	parameters.IgnoreWater = true
+	local origin = attackState.origin + Vector3.new(0, 2, 0)
+	return workspace:Raycast(origin, root.Position - origin, parameters) == nil
+end
+
+local function resolveMonsterAttack(record)
+	local attackState = record.attack
+	if not attackState then return end
+	local telegraph = attackState.telegraph
+	if attackState.castGui and attackState.castGui.Parent then attackState.castGui:Destroy() end
+	if telegraph and telegraph.Parent then
+		for _, part in ipairs(telegraph:GetChildren()) do
+			if part:IsA("BasePart") then
+				TweenService:Create(part, TweenInfo.new(0.1), {Color=Color3.new(1, 1, 1), Transparency=0.04}):Play()
+			end
+		end
+		Debris:AddItem(telegraph, 0.16)
+	end
+	record.model:PivotTo(attackState.base)
+	record.model:SetAttribute("AttackState", "Impact")
+	fxRemote:FireAllClients("monsterImpact", {
+		monster=record.model, position=attackState.origin,
+		radius=attackState.definition.radius or attackState.definition.range or 6,
+	})
+	for player, session in pairs(sessions) do
+		local root, humanoid
+		if session.ready then root, humanoid = body(player) end
+		local region = root and regionAt(root.Position)
+		if root and humanoid and region and not region.safe
+			and math.abs(root.Position.Y - attackState.origin.Y) < 16
+			and positionInAttack(attackState, root.Position)
+			and clearAttackPath(record, player, root, attackState) then
+			local profile = Profiles.Get(player)
+			if profile then
+				local damage = math.max(1, record.config.damage - Economy.Stats(profile).defense)
+				local before = humanoid.Health
+				humanoid:TakeDamage(damage)
+				local dealt = math.max(0, before - humanoid.Health)
+				if dealt > 0 then
+					effect(root.Position, Color3.fromRGB(231, 103, 101), 3)
+					fxRemote:FireAllClients("playerHit", {player=player, monster=record.model, damage=dealt})
+				end
+			end
+		end
+	end
+	record.attack = nil
+	task.delay(0.12, function()
+		if record.model.Parent and record.health > 0 and not record.attack then record.model:SetAttribute("AttackState", "Idle") end
+	end)
+end
+
+local function startMonsterAttack(record, targetRoot, now)
+	local definition = record.config.attack or {shape="circle", range=5.5, radius=5.5, windup=0.8, cooldown=1.3}
+	local position = record.model:GetPivot().Position
+	local attackOrigin = groundPosition(position)
+	local direction = flatDirection(position, targetRoot.Position, record.model:GetPivot().LookVector)
+	local base = CFrame.lookAt(position, position + direction)
+	record.model:PivotTo(base)
+	local windup = math.clamp(definition.windup or 0.9, 0.35, 3)
+	record.attack = {
+		definition=definition, origin=attackOrigin, direction=direction, base=base,
+		started=now, resolves=now + windup, windup=windup,
+		telegraph=createTelegraph(definition, attackOrigin, direction, windup),
+		castGui=createCastIndicator(record, definition, windup),
+	}
+	record.nextAttack = now + math.max(windup + 0.15, definition.cooldown or 1.5)
+	record.model:SetAttribute("AttackState", "Windup")
+	record.model:SetAttribute("AttackShape", definition.shape)
+	fxRemote:FireAllClients("monsterWindup", {monster=record.model, shape=definition.shape, windup=windup})
+	return true
+end
+
+local function animateMonsterAttack(record, now)
+	local attackState = record.attack
+	if not attackState then return end
+	local progress = math.clamp((now - attackState.started) / attackState.windup, 0, 1)
+	local recoil
+	if progress < 0.72 then
+		recoil = math.sin((progress / 0.72) * math.pi * 0.5) * 1.15
+	else
+		recoil = 1.15 - ((progress - 0.72) / 0.28) * 2.8
+	end
+	local lift = math.sin(progress * math.pi) * 0.3
+	local lean = math.rad(progress < 0.72 and (-9 * progress / 0.72) or (18 * (progress - 0.72) / 0.28))
+	record.model:PivotTo(attackState.base * CFrame.new(0, lift, recoil) * CFrame.Angles(lean, 0, 0))
+	if now >= attackState.resolves then resolveMonsterAttack(record) end
+end
+
 for _, model in ipairs(world.Enemies:GetChildren()) do
 	local config = Config.Enemies[model:GetAttribute("EnemyType")]
 	if model:IsA("Model") and model.PrimaryPart and config then
 		local record = {
 			model=model, config=config, health=config.health, home=model:GetPivot(),
-			appearance=savedAppearance(model), lastAttack=0, target=nil,
+			appearance=savedAppearance(model), nextAttack=0, attack=nil, target=nil,
 		}
 		mobs[model] = record
 		model:SetAttribute("Alive", true)
@@ -1371,6 +1645,7 @@ local function hurtEnemy(player, record, amount)
 	record.target = player
 	updateEnemyLabel(record)
 	if record.health > 0 then return end
+	cancelMonsterAttack(record)
 	record.model:SetAttribute("Alive", false)
 	visibility(record.model, false, record.appearance)
 	local profile = Profiles.Get(player)
@@ -1386,7 +1661,7 @@ local function hurtEnemy(player, record, amount)
 	task.delay(record.config.respawn, function()
 		if not record.model.Parent or closing then return end
 		record.model:PivotTo(record.home)
-		record.health, record.target, record.lastAttack = record.config.health, nil, 0
+		record.health, record.target, record.nextAttack, record.attack = record.config.health, nil, 0, nil
 		record.model:SetAttribute("Alive", true)
 		visibility(record.model, true, record.appearance)
 		updateEnemyLabel(record)
@@ -1428,20 +1703,30 @@ local function attack(player, payload)
 	if now < (session.cooldowns.attack or 0) or now < (session.cooldowns[skill] or 0) then return end
 	session.cooldowns.attack = now + 0.65
 	session.cooldowns[skill] = now + (skill == "cleave" and 5 or 0.65)
+	fxRemote:FireAllClients("playerAttack", {player=player, skill=skill, target=target})
 	local damage = Economy.Stats(profile).damage
-	if skill == "cleave" then
-		effect(root.Position, Color3.fromRGB(231, 188, 102), 24)
-		for model, other in pairs(mobs) do
-			if other.health > 0 and model.PrimaryPart
-				and (root.Position - model.PrimaryPart.Position).Magnitude <= range
-				and lineOfSight(player.Character, model) then
-				hurtEnemy(player, other, math.floor(damage * 1.6))
+	local attackingCharacter = player.Character
+	task.delay(skill == "cleave" and 0.22 or 0.14, function()
+		if closing or player.Parent ~= Players or player.Character ~= attackingCharacter
+			or not Profiles.Get(player) then return end
+		local strikeRoot = body(player)
+		if not strikeRoot then return end
+		if skill == "cleave" then
+			effect(strikeRoot.Position, Color3.fromRGB(231, 188, 102), 24)
+			for model, other in pairs(mobs) do
+				if other.health > 0 and model.PrimaryPart
+					and (strikeRoot.Position - model.PrimaryPart.Position).Magnitude <= range
+					and lineOfSight(attackingCharacter, model) then
+					hurtEnemy(player, other, math.floor(damage * 1.6))
+				end
 			end
+		elseif record.health > 0 and target.Parent == world.Enemies and target.PrimaryPart
+			and (strikeRoot.Position - target.PrimaryPart.Position).Magnitude <= range
+			and lineOfSight(attackingCharacter, target) then
+			effect(target.PrimaryPart.Position, Color3.fromRGB(246, 233, 185), 4)
+			hurtEnemy(player, record, damage)
 		end
-	else
-		effect(target.PrimaryPart.Position, Color3.fromRGB(246, 233, 185), 4)
-		hurtEnemy(player, record, damage)
-	end
+	end)
 end
 
 local nodeAppearances = {}
@@ -1456,6 +1741,7 @@ local function gather(player, node)
 	local ok, message = Economy.Grant(profile, {[config.item]=config.amount}, 0, config.xp)
 	if not ok then notify(player, message); return end
 	profile.stats.gathered += config.amount
+	fxRemote:FireAllClients("playerAction", {player=player, action="gather", target=node})
 	node:SetAttribute("Available", false)
 	visibility(node, false, nodeAppearances[node])
 	effect(node.PrimaryPart.Position, Color3.fromRGB(106, 221, 173), 5)
@@ -1606,6 +1892,7 @@ local function handleAction(player, name, payload)
 		ok, message, healing = Economy.Consume(profile, payload.item)
 		if ok then
 			humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + healing)
+			fxRemote:FireAllClients("playerAction", {player=player, action="potion"})
 			effect(player.Character.HumanoidRootPart.Position, Color3.fromRGB(93, 230, 158), 6)
 		end
 	elseif name == "claim" then
@@ -1717,7 +2004,14 @@ RunService.Heartbeat:Connect(function(dt)
 	accumulator = 0
 	local now = os.clock()
 	for model, record in pairs(mobs) do
-		if record.health <= 0 or not model.PrimaryPart then continue end
+		if record.health <= 0 or not model.PrimaryPart then
+			cancelMonsterAttack(record)
+			continue
+		end
+		if record.attack then
+			animateMonsterAttack(record, now)
+			continue
+		end
 		local position = model.PrimaryPart.Position
 		local target, nearest = nil, record.config.aggro
 		for player, session in pairs(sessions) do
@@ -1735,17 +2029,15 @@ RunService.Heartbeat:Connect(function(dt)
 		if target then targetRoot, targetHumanoid = body(target) end
 		local goal = targetRoot and targetRoot.Position or record.home.Position
 		local flat = Vector3.new(goal.X - position.X, 0, goal.Z - position.Z)
-		if flat.Magnitude > (targetRoot and 4.5 or 0.5) then
+		local attackDefinition = record.config.attack or {range=5.5}
+		local attackRange = attackDefinition.range or attackDefinition.radius or 5.5
+		local stopDistance = targetRoot and math.max(3.2, math.min(attackRange * 0.82, attackRange - 0.35)) or 0.5
+		if flat.Magnitude > stopDistance then
 			local advance = flat.Unit * math.min(flat.Magnitude, record.config.speed * step)
 			local nextPosition = model:GetPivot().Position + advance
 			model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + flat.Unit))
-		elseif targetHumanoid and now - record.lastAttack >= 1.35 and lineOfSight(target.Character, model) then
-			record.lastAttack = now
-			local profile = Profiles.Get(target)
-			if profile then
-				targetHumanoid:TakeDamage(math.max(1, record.config.damage - Economy.Stats(profile).defense))
-				effect(targetRoot.Position, Color3.fromRGB(231, 103, 101), 3)
-			end
+		elseif targetHumanoid and now >= (record.nextAttack or 0) and lineOfSight(target.Character, model) then
+			startMonsterAttack(record, targetRoot, now)
 		end
 		if not target and (model:GetPivot().Position - record.home.Position).Magnitude < 1 and record.health < record.config.health then
 			record.health = record.config.health
@@ -1788,6 +2080,7 @@ end)
 
 game:BindToClose(function()
 	closing = true
+	for _, record in pairs(mobs) do cancelMonsterAttack(record) end
 	-- Stop economic mutations before recovering each seller's unsold inventory.
 	for player, session in pairs(sessions) do
 		session.ready = false
@@ -1823,6 +2116,7 @@ local Config = require(package:WaitForChild("Config"))
 local Action = package:WaitForChild("Action")
 local State = package:WaitForChild("State")
 local GetState = package:WaitForChild("GetState")
+local FX = package:WaitForChild("FX")
 local world = workspace:WaitForChild("BrumavaleWorld")
 local mouse = player:GetMouse()
 local palette = {
@@ -1844,6 +2138,8 @@ local normalCameraSubject
 local panelOpen = false
 local quantityText, priceText
 local renderPage, updateHUD, openPanel, toast
+local combatAnimations = {}
+local cameraShake = 0
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrumavaleUI"
@@ -1852,6 +2148,15 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 20
 gui.Parent = player:WaitForChild("PlayerGui")
 gui:SetAttribute("Version", Config.Version)
+
+local damageFlash = Instance.new("Frame")
+damageFlash.Name = "DamageFlash"
+damageFlash.Size = UDim2.fromScale(1, 1)
+damageFlash.BackgroundColor3 = Color3.fromRGB(205, 53, 55)
+damageFlash.BackgroundTransparency = 1
+damageFlash.BorderSizePixel = 0
+damageFlash.ZIndex = 90
+damageFlash.Parent = gui
 
 local function create(className, parent, properties)
     local object = Instance.new(className)
@@ -1919,6 +2224,231 @@ local function characterParts()
     if not character then return nil, nil end
     return character:FindFirstChild("HumanoidRootPart"), character:FindFirstChildOfClass("Humanoid")
 end
+
+-- Combat animation is procedural so the project needs no uploaded animation IDs.
+-- Motor6D.Transform is written locally after the default Animator and released at
+-- the end of each short action, preserving Roblox's normal locomotion afterward.
+local clientEffects = Instance.new("Folder")
+clientEffects.Name = "BrumavaleClientEffects"
+clientEffects.Parent = world
+
+local function motor(character, ...)
+    for index = 1, select("#", ...) do
+        local joint = character:FindFirstChild(select(index, ...), true)
+        if joint and joint:IsA("Motor6D") then return joint end
+    end
+    return nil
+end
+
+local function resetCombatAnimation(state)
+    for _, joint in pairs(state.motors or {}) do
+        if joint and joint.Parent then joint.Transform = CFrame.new() end
+    end
+end
+
+local animationDurations = {basic=0.48, cleave=0.78, gather=0.68, potion=0.72, hit=0.3}
+local function startCombatAnimation(actor, action)
+    if typeof(actor) ~= "Instance" or not actor:IsA("Player") or actor.Parent ~= Players or type(action) ~= "string" then return end
+    local character = actor.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if not character or not humanoid or humanoid.Health <= 0 or not animationDurations[action] then return end
+    local localRoot = characterParts()
+    local actorRoot = character:FindFirstChild("HumanoidRootPart")
+    if actor ~= player and (not localRoot or not actorRoot or (localRoot.Position - actorRoot.Position).Magnitude > 160) then return end
+    local previous = combatAnimations[character]
+    if previous then resetCombatAnimation(previous) end
+    combatAnimations[character] = {
+        action=action, started=os.clock(), duration=animationDurations[action],
+        motors={
+            right=motor(character, "RightShoulder", "Right Shoulder"),
+            left=motor(character, "LeftShoulder", "Left Shoulder"),
+            waist=motor(character, "Waist", "RootJoint", "Root Joint"),
+            neck=motor(character, "Neck"),
+        },
+    }
+end
+
+local function effectPart(size, cframe, color, life, shape)
+    if #clientEffects:GetChildren() >= 150 then return nil end
+    local part = Instance.new("Part")
+    part.Name = "CombatFX"
+    part.Size = size
+    part.CFrame = cframe
+    part.Color = color
+    part.Material = Enum.Material.Neon
+    part.Transparency = 0.18
+    part.Anchored = true
+    part.CanCollide = false
+    part.CanTouch = false
+    part.CanQuery = false
+    part.CastShadow = false
+    if shape then part.Shape = shape end
+    part.Parent = clientEffects
+    Debris:AddItem(part, life or 0.5)
+    return part
+end
+
+local function burst(position, color, radius)
+    if typeof(position) ~= "Vector3" then return end
+    local localRoot = characterParts()
+    if not localRoot or (localRoot.Position - position).Magnitude > 170 then return end
+    radius = math.clamp(tonumber(radius) or 5, 2, 18)
+    for index = 1, 8 do
+        local angle = index * math.pi * 0.25
+        local direction = Vector3.new(math.cos(angle), 0.35 + (index % 2) * 0.2, math.sin(angle)).Unit
+        local part = effectPart(Vector3.new(0.28, 0.28, 2.4), CFrame.lookAt(position, position + direction), color, 0.42)
+        if part then
+            TweenService:Create(part, TweenInfo.new(0.38, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                CFrame=part.CFrame + direction * radius, Transparency=1, Size=Vector3.new(0.08, 0.08, 0.8),
+            }):Play()
+        end
+    end
+end
+
+local function actionEffect(actor, action, target)
+    local character = actor.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local localRoot = characterParts()
+    if actor ~= player and (not localRoot or (localRoot.Position - root.Position).Magnitude > 160) then return end
+    if action == "basic" then
+		local strikeCFrame = root.CFrame
+		if typeof(target) == "Instance" and target:IsA("Model") and target.PrimaryPart then
+			local delta = Vector3.new(target.PrimaryPart.Position.X - root.Position.X, 0, target.PrimaryPart.Position.Z - root.Position.Z)
+			if delta.Magnitude > 0.05 then strikeCFrame = CFrame.lookAt(root.Position, root.Position + delta.Unit) end
+		end
+        for index = -1, 1 do
+            local part = effectPart(Vector3.new(0.14, 5.5, 0.65), strikeCFrame * CFrame.new(index * 0.45, 1.2, -4.2) * CFrame.Angles(0, 0, math.rad(48 + index * 7)), palette.gold, 0.36)
+            if part then
+                TweenService:Create(part, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Transparency=1, Size=Vector3.new(0.05, 7, 0.2),
+                }):Play()
+            end
+        end
+    elseif action == "cleave" then
+        for index = 1, 18 do
+            local angle = index * math.pi * 2 / 18
+            local position = root.Position + Vector3.new(math.cos(angle) * 6.3, -2.65, math.sin(angle) * 6.3)
+            local tangent = Vector3.new(-math.sin(angle), 0, math.cos(angle))
+            local part = effectPart(Vector3.new(0.35, 0.16, 2.6), CFrame.lookAt(position, position + tangent), palette.gold, 0.52)
+            if part then
+                TweenService:Create(part, TweenInfo.new(0.45), {Transparency=1, Size=Vector3.new(0.1, 0.08, 3.8)}):Play()
+            end
+        end
+    elseif action == "gather" then
+        burst(root.Position + root.CFrame.LookVector * 3 + Vector3.new(0, 1.2, 0), palette.teal, 3.5)
+    elseif action == "potion" then
+        local orb = effectPart(Vector3.new(1.2, 1.2, 1.2), root.CFrame * CFrame.new(0, 1, -1.2), palette.green, 0.75, Enum.PartType.Ball)
+        if orb then
+            TweenService:Create(orb, TweenInfo.new(0.65, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                CFrame=orb.CFrame + Vector3.new(0, 3.5, 0), Size=Vector3.new(3.5, 3.5, 3.5), Transparency=1,
+            }):Play()
+        end
+    end
+end
+
+local function animateCombat(now)
+    for character, state in pairs(combatAnimations) do
+        local elapsed = now - state.started
+        local progress = math.clamp(elapsed / state.duration, 0, 1)
+        local motors = state.motors
+        local right, left, waist, neck = CFrame.new(), CFrame.new(), CFrame.new(), CFrame.new()
+        if state.action == "basic" then
+            if progress < 0.28 then
+                local alpha = progress / 0.28
+                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)), alpha)
+                waist = CFrame.Angles(0, math.rad(35 * alpha), 0)
+            elseif progress < 0.62 then
+                local alpha = (progress - 0.28) / 0.34
+                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)), alpha)
+                waist = CFrame.Angles(0, math.rad(35 - 85 * alpha), 0)
+            else
+                local alpha = (progress - 0.62) / 0.38
+                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)):Lerp(CFrame.new(), alpha)
+                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha)), 0)
+            end
+        elseif state.action == "cleave" then
+            local swing = math.sin(progress * math.pi)
+            local spin = progress < 0.82 and (-55 + 190 * progress / 0.82) or (135 * (1 - (progress - 0.82) / 0.18))
+            right = CFrame.Angles(math.rad(-65 * swing), 0, math.rad(75 * swing))
+            left = CFrame.Angles(math.rad(-35 * swing), 0, math.rad(-35 * swing))
+            waist = CFrame.Angles(0, math.rad(spin), 0)
+        elseif state.action == "gather" then
+            local swing = math.sin(progress * math.pi)
+            right = CFrame.Angles(math.rad(-125 * swing), 0, math.rad(28 * swing))
+            left = CFrame.Angles(math.rad(-35 * swing), 0, math.rad(-18 * swing))
+            waist = CFrame.Angles(math.rad(-12 * swing), math.rad(-18 * swing), 0)
+        elseif state.action == "potion" then
+            local lift = math.sin(progress * math.pi)
+            right = CFrame.Angles(math.rad(-120 * lift), 0, math.rad(-35 * lift))
+            neck = CFrame.Angles(math.rad(-15 * lift), math.rad(8 * lift), 0)
+        elseif state.action == "hit" then
+            local recoil = math.sin(progress * math.pi)
+            right = CFrame.Angles(math.rad(35 * recoil), 0, math.rad(25 * recoil))
+            left = CFrame.Angles(math.rad(35 * recoil), 0, math.rad(-25 * recoil))
+            waist = CFrame.Angles(math.rad(-18 * recoil), 0, math.rad(12 * recoil))
+        end
+        if motors.right and motors.right.Parent then motors.right.Transform = right end
+        if motors.left and motors.left.Parent then motors.left.Transform = left end
+        if motors.waist and motors.waist.Parent then motors.waist.Transform = waist end
+        if motors.neck and motors.neck.Parent then motors.neck.Transform = neck end
+        if elapsed >= state.duration or not character.Parent then
+            resetCombatAnimation(state)
+            combatAnimations[character] = nil
+        end
+    end
+end
+
+RunService:BindToRenderStep("BrumavaleCombatAnimation", Enum.RenderPriority.Character.Value + 1, function()
+    animateCombat(os.clock())
+end)
+
+FX.OnClientEvent:Connect(function(event, payload)
+    if type(event) ~= "string" or type(payload) ~= "table" then return end
+    if event == "playerAttack" or event == "playerAction" then
+        local actor = payload.player
+        local action = payload.skill or payload.action
+        if typeof(actor) == "Instance" and actor:IsA("Player") and actor.Parent == Players and type(action) == "string" then
+            startCombatAnimation(actor, action)
+            actionEffect(actor, action, payload.target)
+        end
+    elseif event == "monsterWindup" then
+		local monster = payload.monster
+		local enemies = world:FindFirstChild("Enemies")
+		if typeof(monster) == "Instance" and monster:IsA("Model") and enemies and monster.Parent == enemies then
+			local highlight = Instance.new("Highlight")
+			highlight.Name = "WindupHighlight"
+			highlight.Adornee = monster
+			highlight.FillColor = palette.red
+			highlight.OutlineColor = palette.gold
+			highlight.FillTransparency = 0.88
+			highlight.OutlineTransparency = 0.25
+			highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+			highlight.Parent = clientEffects
+			local life = math.clamp(tonumber(payload.windup) or 0.8, 0.3, 3)
+			TweenService:Create(highlight, TweenInfo.new(life), {FillTransparency=0.55, OutlineTransparency=0.05}):Play()
+			Debris:AddItem(highlight, life + 0.12)
+		end
+    elseif event == "monsterImpact" then
+        local position = payload.position
+        if typeof(position) ~= "Vector3" and typeof(payload.monster) == "Instance" and payload.monster:IsA("Model") and payload.monster.PrimaryPart then
+            position = payload.monster.PrimaryPart.Position
+        end
+        burst(position, palette.red, payload.radius or 6)
+    elseif event == "playerHit" then
+        local victim = payload.player
+        if typeof(victim) ~= "Instance" or not victim:IsA("Player") or victim.Parent ~= Players then return end
+        startCombatAnimation(victim, "hit")
+        local character = victim.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        if root then burst(root.Position, palette.red, 3.5) end
+        if victim == player then
+            cameraShake = math.min(1.2, cameraShake + math.clamp((tonumber(payload.damage) or 8) / 22, 0.25, 0.8))
+            damageFlash.BackgroundTransparency = 0.78
+            TweenService:Create(damageFlash, TweenInfo.new(0.45), {BackgroundTransparency=1}):Play()
+        end
+    end
+end)
 
 -- HUD discreto, com áreas livres para o joystick e salto do Roblox.
 local identity = frame(gui, {Position = UDim2.fromOffset(16, 10), Size = UDim2.fromOffset(252, 102), BackgroundColor3 = palette.ink, BackgroundTransparency = 0.08})
@@ -2198,7 +2728,7 @@ local function showHelp()
         row(1, quest.title or "Jornada", (quest.description or "") .. "\n" .. tostring(quest.current or 0) .. "/" .. tostring(quest.target or 1) .. " · " .. tostring(quest.rewardSilver or 0) .. " prata / " .. tostring(quest.rewardXP or 0) .. " XP. Resgate junto ao mestre na cidade.", "!", palette.gold, quest.complete and "Resgatar" or nil, function() send("claim") end, false, 112)
     end
     row(2, "01  •  Colete e refine", "E nos recursos para coletar. Leve madeira, minério e fibras à oficina para refinar e fabricar equipamentos.", "01", palette.teal, nil, nil, false, 93)
-    row(3, "02  •  Equipe e lute", "I abre a mochila. Clique em um inimigo próximo para atacar; Q aplica corte em área; R usa uma poção. No celular, use os botões inferiores.", "02", palette.red, nil, nil, false, 105)
+    row(3, "02  •  Equipe, lute e desvie", "I abre a mochila. Clique em um inimigo próximo para atacar; Q usa corte em área; R usa poção. Saia dos círculos, cones e linhas vermelhas antes da barra do golpe inimigo completar.", "02", palette.red, nil, nil, false, 112)
     row(4, "03  •  Construa sua economia", "Venda recursos ao mercador ou anuncie itens para jogadores deste servidor. Vendas e fabricação exigem proximidade das bancas.", "03", palette.gold, nil, nil, false, 100)
     row(5, "Controles", "WASD / joystick: mover · Espaço: saltar · E: interagir · I: inventário · C: fabricar · M: mapa · V: câmera · Esc: fechar painel.", "⌨", palette.muted, nil, nil, false, 104)
     row(6, "Sobre esta versão", "Protótipo original com combate PvE e mercado por servidor. No Studio, o progresso é temporário. Servidores publicados usam salvamento quando disponível.", "i", palette.muted, nil, nil, false, 104)
@@ -2372,6 +2902,12 @@ RunService.RenderStepped:Connect(function(dt)
         camera.CFrame = CFrame.lookAt(focus + Vector3.new(44, 54, 44), focus)
         camera.Focus = CFrame.new(focus)
     end
+    if camera and cameraShake > 0 then
+        local clock = os.clock() * 34
+        local offset = Vector3.new(math.noise(clock, 0, 0), math.noise(0, clock, 0), 0) * cameraShake * 0.22
+        camera.CFrame = camera.CFrame * CFrame.new(offset) * CFrame.Angles(0, 0, math.noise(clock, clock, 0) * cameraShake * 0.012)
+        cameraShake = math.max(0, cameraShake - dt * 3.8)
+    end
     layoutClock = layoutClock + dt
     if layoutClock < 0.1 then return end
     layoutClock = 0
@@ -2478,10 +3014,12 @@ local ok, problem = xpcall(function()
         end
     end
     local shared = make("Folder","Brumavale",ReplicatedStorage)
-    shared:SetAttribute("Version",2)
+    shared:SetAttribute("Version",3)
     make("ModuleScript","Config",shared,Sources.Config)
+    make("ModuleScript","CombatMath",shared,Sources.CombatMath)
     make("RemoteEvent","Action",shared)
     make("RemoteEvent","State",shared)
+    make("RemoteEvent","FX",shared)
     make("RemoteFunction","GetState",shared)
     local server = make("Folder","Brumavale",ServerScriptService)
     make("ModuleScript","Economy",server,Sources.Economy)
@@ -2507,7 +3045,7 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE v2 instalado! Servidor e cliente ativados. Pressione Play.")
+print("BRUMAVALE v3 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
 print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")

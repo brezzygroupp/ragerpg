@@ -8,6 +8,7 @@ import json
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = {
     "Config": "src/shared/Config.lua",
+    "CombatMath": "src/shared/CombatMath.lua",
     "Economy": "src/server/Economy.lua",
     "Profiles": "src/server/Profiles.lua",
     "World": "src/server/World.lua",
@@ -81,10 +82,12 @@ local ok, problem = xpcall(function()
         end
     end
     local shared = make("Folder","Brumavale",ReplicatedStorage)
-    shared:SetAttribute("Version",2)
+    shared:SetAttribute("Version",3)
     make("ModuleScript","Config",shared,Sources.Config)
+    make("ModuleScript","CombatMath",shared,Sources.CombatMath)
     make("RemoteEvent","Action",shared)
     make("RemoteEvent","State",shared)
+    make("RemoteEvent","FX",shared)
     make("RemoteFunction","GetState",shared)
     local server = make("Folder","Brumavale",ServerScriptService)
     make("ModuleScript","Economy",server,Sources.Economy)
@@ -110,7 +113,7 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE v2 instalado! Servidor e cliente ativados. Pressione Play.")
+print("BRUMAVALE v3 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
 print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")

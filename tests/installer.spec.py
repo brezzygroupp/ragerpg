@@ -11,7 +11,9 @@ checks = {
     "server is enabled": "main.Enabled = true" in bundle,
     "client is enabled": "client.Enabled = true" in bundle,
     "activation is verified": "assert(main.Enabled and client.Enabled" in bundle,
-    "version two is installed": 'shared:SetAttribute("Version",2)' in bundle,
+    "version three is installed": 'shared:SetAttribute("Version",3)' in bundle,
+    "combat effects remote is installed": 'make("RemoteEvent","FX",shared)' in bundle,
+    "combat geometry is installed": 'make("ModuleScript","CombatMath",shared,Sources.CombatMath)' in bundle,
 }
 failed = [name for name, passed in checks.items() if not passed]
 if failed:

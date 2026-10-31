@@ -7,18 +7,19 @@ Brumavale é uma base jogável e original de RPG sandbox, criada inteiramente co
 1. Abra uma experiência no Roblox Studio e pare qualquer teste em execução.
 2. Abra **Exibir (View) → Command Bar**.
 3. Abra [Brumavale.commandbar.lua](dist/Brumavale.commandbar.lua), copie o arquivo inteiro, cole na Command Bar e pressione **Enter** uma vez.
-4. Aguarde a mensagem `BRUMAVALE v2 instalado!` no Output e pressione **Play**.
+4. Aguarde a mensagem `BRUMAVALE v3 instalado!` no Output e pressione **Play**.
 5. Salve ou publique a experiência pelo Studio quando estiver satisfeito.
 
 O instalador funciona offline e não usa modelos, plugins, IDs de assets, HTTP ou módulos de terceiros. Ele só cria objetos dentro dos namespaces `Brumavale`. Uma reinstalação preserva a versão anterior em `ServerStorage/BrumavaleBackup_*`. Se encontrar um objeto de outra origem com um desses nomes, ele para sem sobrescrevê-lo.
 
-Se uma versão anterior já estiver instalada, pare o teste, execute novamente o instalador completo e depois inicie um novo Play. A versão 2 verifica explicitamente que tanto o servidor quanto o `LocalScript` da interface foram ativados.
+Se uma versão anterior já estiver instalada, pare o teste, execute novamente o instalador completo e depois inicie um novo Play. A versão 3 verifica os scripts de servidor e cliente e instala os efeitos de combate.
 
 ## O que já funciona
 
 - Cidade segura **Porto Bruma** e quatro regiões: Prados do Sol, Bosque Âmbar, Pedreira Cinzenta e Ruínas da Aurora.
 - 33 pontos de recursos, 14 inimigos, chefe guardião, respawn e IA simples.
-- Combate validado pelo servidor, ataque básico, corte em área, defesa, cura e perda de 10% da prata ao cair.
+- Combate validado pelo servidor, animações procedurais, ataque básico, corte em área, defesa, cura e perda de 10% da prata ao cair.
+- Ataques inimigos telegrafados no chão como círculos, cones ou linhas; o dano acontece após a preparação e pode ser evitado saindo da área.
 - Mochila com limite de peso, armas, armaduras, consumíveis e equipamento visual.
 - Coleta, refino, nove receitas, níveis, XP e quatro contratos progressivos.
 - Mercador com preços fixos e mercado de ofertas entre jogadores do mesmo servidor, com reserva dos itens e taxa de venda.
@@ -50,7 +51,7 @@ python3 tools/build.py
 python3 tools/check.py --luau /caminho/para/luau --compiler /caminho/para/luau-compile
 ```
 
-As verificações locais compilam cada script e o instalador final, conferem se o bundle está atualizado, executam 28 testes de transações da economia, 7 testes do salvamento com um DataStore simulado e verificam o bootstrap dos scripts de servidor e cliente. A aparência, os prompts, a integração real com DataStore e o fluxo multiplayer ainda precisam de um teste final dentro do Roblox Studio, pois este ambiente de desenvolvimento não inclui o Studio.
+As verificações locais compilam cada script e o instalador final, conferem se o bundle está atualizado, executam 28 testes de economia, 7 de salvamento e 4 da geometria dos ataques, além de verificar o bootstrap dos scripts de servidor e cliente. A aparência, os prompts, a integração real com DataStore e o fluxo multiplayer ainda precisam de um teste final dentro do Roblox Studio, pois este ambiente de desenvolvimento não inclui o Studio.
 
 ## Escopo desta versão
 

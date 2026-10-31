@@ -1,11 +1,12 @@
 {
   "version": 1,
   "sources": {
-    "src/shared/Config.lua": "0b4f075203a2c355b53c1340cf77c168e0dd987501badc68d829475f6faffb96",
+    "src/shared/Config.lua": "4e2c53af5c0bed9e05b8addaa50d4bad1e2957a2610c0bd4d9b829af0f9cedbe",
+    "src/shared/CombatMath.lua": "5cff9e50f10243cbc7ac14b96216328d91f51298a8a009023bda5ef5bb00253e",
     "src/server/Economy.lua": "bba2cef0c28ba2697efe80ea29fb4324b686b68cd95d4d6feda91aaffaa8f29f",
     "src/server/Profiles.lua": "0271505a424667b62d89988c80f35d00ae3fc91ac08510db7843c5cbc2887e2e",
-    "src/server/World.lua": "ad9df4ff3125b5d90a61aef974b6597f08536103d02fd5a95029c43a3d71b6e3",
-    "src/server/Main.server.lua": "90651bae3820fceb8069f34148dfb57c76c3e35e36d192b396a47d09a060bb08",
-    "src/client/Client.client.lua": "4a7a241a5e7cce3c59fc1f11401983152ff9479e92e40a5422a2e99111e3eee4"
+    "src/server/World.lua": "5910f73228f7da41968a775118fad28b52d385bd854fba307b57f33159231f8b",
+    "src/server/Main.server.lua": "eb3980fcebd5dfe19bcb341e0b1de74e63a97d90c24496ac6d8c19dbdc687c44",
+    "src/client/Client.client.lua": "6f993d15057a4375e27e71b0f7325fb73612386a581ea336923e19b63fcee077"
   }
 }
