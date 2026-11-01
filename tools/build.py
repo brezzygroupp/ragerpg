@@ -82,7 +82,7 @@ local ok, problem = xpcall(function()
         end
     end
     local shared = make("Folder","Brumavale",ReplicatedStorage)
-    shared:SetAttribute("Version",3)
+    shared:SetAttribute("Version",6)
     make("ModuleScript","Config",shared,Sources.Config)
     make("ModuleScript","CombatMath",shared,Sources.CombatMath)
     make("RemoteEvent","Action",shared)
@@ -99,6 +99,11 @@ local ok, problem = xpcall(function()
     assert(world and world.Parent == workspace,"A geração do mapa não retornou um mundo válido.")
     world:SetAttribute("BrumavaleGenerated",true)
     assert(world:FindFirstChild("TownSpawn",true),"Spawn não gerado.")
+    assert(world:GetAttribute("Version") == 6, "Mundo antigo gerado: versão incorreta.")
+    assert(not world:FindFirstChild("PortalPlaza",true), "PortalPlaza antiga encontrada no novo mundo.")
+    local portalCount = #world:WaitForChild("Portals"):GetChildren()
+    assert(portalCount >= 12, "Rede de portais incompleta: " .. portalCount)
+    print("[BRUMAVALE V6] Mundo verificado | Portais: " .. portalCount .. " | Sem PortalPlaza")
     main.Enabled = true
     client.Enabled = true
     assert(main.Enabled and client.Enabled, "Os scripts de runtime não foram ativados.")
@@ -113,7 +118,7 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE v3 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
+print("[BRUMAVALE WORLD V6] 12 REGIOES 1800x1800 | PORTAIS NAS FRONTEIRAS | SEM PORTALPLAZA")
 print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")

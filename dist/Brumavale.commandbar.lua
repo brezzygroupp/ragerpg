@@ -8,7 +8,7 @@ local Sources = {}
 Sources.Config = [=[
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 3
+Config.Version = 6
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05
@@ -46,17 +46,32 @@ Config.Recipes = {
 	sword3 = {ingredients={ingot=6,plank=3,crystal=6},amount=1,fee=90,level=4},
 }
 Config.Regions = {
-	{id="town",name="Porto Bruma",center={0,0,0},size=240,safe=true,level=1,color={74,113,104}},
-	{id="meadow",name="Prados do Sol",center={0,0,270},size=240,safe=false,level=1,color={109,151,77}},
-	{id="forest",name="Bosque Âmbar",center={270,0,0},size=240,safe=false,level=2,color={55,101,78}},
-	{id="quarry",name="Pedreira Cinzenta",center={-270,0,0},size=240,safe=false,level=3,color={116,119,129}},
-	{id="ruins",name="Ruínas da Aurora",center={0,0,-270},size=240,safe=false,level=4,color={77,82,113}},
+	{id="town",name="Porto Bruma",center={0,0,0},size=1800,safe=true,level=1,color={74,113,104}},
+	{id="meadow",name="Prados do Sol",center={0,0,2200},size=1800,safe=false,level=1,color={109,151,77}},
+	{id="forest",name="Bosque Âmbar",center={2200,0,0},size=1800,safe=false,level=2,color={55,101,78}},
+	{id="quarry",name="Pedreira Cinzenta",center={-2200,0,0},size=1800,safe=false,level=3,color={116,119,129}},
+	{id="ruins",name="Ruínas da Aurora",center={0,0,-2200},size=1800,safe=false,level=4,color={77,82,113}},
+	{id="marsh",name="Pântano Esquecido",center={-2200,0,2200},size=1800,safe=false,level=3,color={68,105,86}},
+	{id="highlands",name="Planalto dos Ventos",center={2200,0,2200},size=1800,safe=false,level=3,color={119,143,102}},
+	{id="frost",name="Picos de Gelo",center={2200,0,-2200},size=1800,safe=false,level=5,color={170,195,204}},
+	{id="ash",name="Ermos de Cinza",center={-2200,0,-2200},size=1800,safe=false,level=5,color={95,83,79}},
+	{id="canyon",name="Desfiladeiro Rubro",center={4400,0,0},size=1800,safe=false,level=5,color={161,100,77}},
+	{id="grove",name="Jardim Luminoso",center={0,0,4400},size=1800,safe=false,level=4,color={82,148,127}},
+	{id="citadel",name="Cidadela Perdida",center={0,0,-4400},size=1800,safe=false,level=6,color={81,74,105}},
 }
 Config.Enemies = {
 	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18,attack={name="Salto viscoso",shape="circle",range=6,radius=6,windup=0.9,cooldown=1.9}},
 	wolf = {name="Lobo âmbar",health=78,damage=11,speed=13,xp=40,silver=14,loot={hide=2},aggro=40,respawn=23,attack={name="Bote",shape="cone",range=9,angle=70,windup=0.7,cooldown=1.7}},
 	bandit = {name="Saqueador",health=105,damage=14,speed=10,xp=58,silver=22,loot={ore=2},aggro=38,respawn=26,attack={name="Corte frontal",shape="line",range=12,width=5,windup=1.0,cooldown=2.2}},
 	guardian = {name="Sentinela da aurora",health=240,damage=21,speed=8,xp=130,silver=60,loot={crystal=3},aggro=40,respawn=40,attack={name="Ruptura rúnica",shape="circle",range=14,radius=14,windup=1.5,cooldown=3.1}},
+	bogling = {name="Rastejante do pântano",health=82,damage=12,speed=9,xp=44,silver=15,loot={fiber=2},aggro=38,respawn=22,attack={name="Maré tóxica",shape="circle",radius=7,range=7,windup=1.2,cooldown=2.5}},
+	boar = {name="Javali selvagem",health=115,damage=17,speed=15,xp=63,silver=24,loot={hide=3},aggro=43,respawn=25,attack={name="Investida",shape="line",range=13,width=5,windup=0.8,cooldown=2.4}},
+	wisp = {name="Espírito errante",health=70,damage=14,speed=12,xp=58,silver=22,loot={crystal=1},aggro=42,respawn=24,attack={name="Clarão",shape="circle",radius=9,range=9,windup=1.1,cooldown=2.8}},
+	icewolf = {name="Lobo da geada",health=144,damage=20,speed=15,xp=83,silver=35,loot={hide=3},aggro=45,respawn=29,attack={name="Mordida congelante",shape="cone",range=10,angle=80,windup=0.8,cooldown=2.2}},
+	ashgolem = {name="Golem de cinzas",health=310,damage=28,speed=7,xp=165,silver=73,loot={ore=4},aggro=40,respawn=42,attack={name="Impacto vulcânico",shape="circle",radius=15,range=15,windup=1.6,cooldown=3.4}},
+	scorpion = {name="Escorpião rubro",health=155,damage=24,speed=12,xp=100,silver=40,loot={ore=2},aggro=44,respawn=30,attack={name="Ferrão",shape="cone",range=11,angle=65,windup=0.9,cooldown=2.6}},
+	knight = {name="Cavaleiro exilado",health=220,damage=29,speed=11,xp=140,silver=65,loot={ingot=2},aggro=43,respawn=35,attack={name="Golpe pesado",shape="line",range=15,width=7,windup=1.2,cooldown=2.8}},
+	ancient = {name="Colosso ancestral",health=650,damage=39,speed=7,xp=350,silver=180,loot={crystal=5},aggro=48,respawn=80,attack={name="Onda ancestral",shape="circle",radius=19,range=19,windup=2,cooldown=4.5}},
 }
 Config.Nodes = {
 	tree = {name="Árvore",item="wood",amount=3,respawn=18,xp=9,color={111,79,50}},
@@ -631,7 +646,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 3
+local VERSION = 6
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
@@ -847,13 +862,13 @@ local function enemy(parent, kind, pos, index)
     local def = Config.Enemies[kind]
     assert(def, "Missing enemy configuration: " .. kind)
     local m = model(parent, kind .. "_" .. tostring(index))
-    if kind == "slime" then
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(4.5, 3.1, 4.5), pos + Vector3.new(0, 1.7, 0), Color3.fromRGB(114, 191, 135), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+    if kind == "slime" or kind == "bogling" or kind == "wisp" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(4.5, 3.1, 4.5), pos + Vector3.new(0, 1.7, 0), (kind == "wisp" and Color3.fromRGB(112,220,242) or kind == "bogling" and Color3.fromRGB(90,133,83) or Color3.fromRGB(114,191,135)), kind == "wisp" and Enum.Material.Neon or Enum.Material.SmoothPlastic, Enum.PartType.Ball))
         for _, x in ipairs({-0.8, 0.8}) do
             noCollision(part(m, "Eye", Vector3.new(0.65, 0.7, 0.3), pos + Vector3.new(x, 2.1, -2), C.ink, Enum.Material.SmoothPlastic, Enum.PartType.Ball))
         end
-    elseif kind == "wolf" then
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 2.4, 5), pos + Vector3.new(0, 2.7, 0), Color3.fromRGB(132, 142, 148), Enum.Material.Slate))
+    elseif kind == "wolf" or kind == "icewolf" or kind == "boar" or kind == "scorpion" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 2.4, 5), pos + Vector3.new(0, 2.7, 0), (kind == "icewolf" and Color3.fromRGB(196,215,231) or kind == "boar" and Color3.fromRGB(111,75,58) or kind == "scorpion" and Color3.fromRGB(147,62,52) or Color3.fromRGB(132,142,148)), Enum.Material.Slate))
         noCollision(part(m, "Head", Vector3.new(2.5, 2.3, 2.4), pos + Vector3.new(0, 3.5, -2.8), Color3.fromRGB(161, 169, 173)))
         noCollision(part(m, "Muzzle", Vector3.new(1.6, 1, 1.3), pos + Vector3.new(0, 3.1, -4.2), C.darkStone))
         for _, x in ipairs({-1, 1}) do
@@ -864,7 +879,7 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.4, 0.4, 0.2), pos + Vector3.new(x * 0.7, 3.8, -4.05), C.gold, Enum.Material.Neon))
         end
         noCollision(part(m, "Tail", Vector3.new(0.9, 0.9, 2.5), CFrame.new(pos + Vector3.new(0, 3, 3.1)) * CFrame.Angles(-0.25, 0, 0), C.darkStone))
-    elseif kind == "guardian" then
+    elseif kind == "guardian" or kind == "ashgolem" or kind == "ancient" then
         m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(5.5, 6, 3.5), pos + Vector3.new(0, 5.7, 0), C.darkStone, Enum.Material.Slate))
         noCollision(part(m, "Head", Vector3.new(3.2, 3, 3), pos + Vector3.new(0, 10, 0), C.stone, Enum.Material.Slate))
         noCollision(part(m, "Rune", Vector3.new(1.6, 2.2, 0.25), pos + Vector3.new(0, 6, -1.9), Color3.fromRGB(157, 124, 235), Enum.Material.Neon))
@@ -874,7 +889,9 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.75, 0.45, 0.2), pos + Vector3.new(x * 0.8, 10.2, -1.6), C.teal, Enum.Material.Neon))
         end
     else
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), Color3.fromRGB(105, 62, 68)))
+        local armorColor = kind == "knight" and Color3.fromRGB(56, 74, 102) or Color3.fromRGB(105, 62, 68)
+        local rootPart = part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), armorColor)
+        m.PrimaryPart = noCollision(rootPart)
         noCollision(part(m, "Head", Vector3.new(1.8, 1.8, 1.8), pos + Vector3.new(0, 6.3, 0), Color3.fromRGB(196, 156, 118)))
         noCollision(part(m, "Hood", Vector3.new(2, 0.7, 2), pos + Vector3.new(0, 7.35, 0), C.darkStone))
         noCollision(part(m, "Mask", Vector3.new(1.9, 0.7, 0.3), pos + Vector3.new(0, 5.95, -0.95), C.darkStone))
@@ -883,6 +900,83 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Leg", Vector3.new(1, 2.4, 1.2), pos + Vector3.new(x * 0.75, 1.2, 0), C.darkStone))
         end
         noCollision(part(m, "Blade", Vector3.new(0.35, 4, 0.65), pos + Vector3.new(2.4, 4, -0.5), C.stone, Enum.Material.Metal))
+    end
+
+    -- Distinct silhouettes and readable weak-point accents, entirely offline.
+    local function ornament(name, size, offset, color, material, shape)
+        local p = noCollision(part(m, name, size, pos + offset, color, material or Enum.Material.SmoothPlastic, shape))
+        p.CanTouch = false
+        p.CanQuery = false
+        return p
+    end
+    if kind == "boar" then
+        for _, x in ipairs({-1, 1}) do
+            ornament("Tusk", Vector3.new(0.65, 1.6, 0.65), Vector3.new(x * 0.85, 2.9, -4.45), C.cream)
+            ornament("Bristle", Vector3.new(0.55, 1.65, 0.7), Vector3.new(x * 0.55, 4.25, -0.7), C.wood)
+        end
+        ornament("Snout", Vector3.new(2.1, 1.2, 0.7), Vector3.new(0, 3, -4.7), Color3.fromRGB(153, 98, 90))
+    elseif kind == "scorpion" then
+        for side = -1, 1 do
+            for index = 1, 4 do
+                ornament("ScorpionLeg", Vector3.new(2.7, 0.4, 0.55), Vector3.new(side * 2.35, 1.7, (index-2.5)*1.1), Color3.fromRGB(116,48,44))
+            end
+            ornament("Claw", Vector3.new(2, 1, 1.5), Vector3.new(side * 2.7, 2, -3.8), Color3.fromRGB(192,81,61))
+        end
+        ornament("Stinger", Vector3.new(0.9, 4.5, 0.9), Vector3.new(0, 5.6, 3.1), Color3.fromRGB(191,76,53))
+        ornament("StingerTip", Vector3.new(0.8, 1.4, 0.8), Vector3.new(0, 8, 3.4), C.ink)
+    elseif kind == "wolf" or kind == "icewolf" then
+        local fur = kind == "icewolf" and Color3.fromRGB(221,237,246) or Color3.fromRGB(86,105,111)
+        for side = -1, 1 do
+            ornament("FurTuft", Vector3.new(1.1, 1.45, 1.2), Vector3.new(side * 1.25, 3.4, -1.2), fur)
+            ornament("Fang", Vector3.new(0.3, 0.8, 0.3), Vector3.new(side * 0.65, 2.8, -4.5), C.cream)
+        end
+    elseif kind == "bogling" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("MireSpike", Vector3.new(0.6, 2.2, 0.6), Vector3.new(math.cos(angle)*1.3, 3.15, math.sin(angle)*1.3), Color3.fromRGB(47,91,59))
+        end
+    elseif kind == "wisp" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("SpiritFlame", Vector3.new(0.85, 2.7, 0.85), Vector3.new(math.cos(angle)*2.1, 2.6, math.sin(angle)*2.1), Color3.fromRGB(140,232,255), Enum.Material.Neon, Enum.PartType.Ball)
+        end
+    elseif kind == "guardian" or kind == "ashgolem" or kind == "ancient" then
+        local glow = kind == "ashgolem" and Color3.fromRGB(255,110,54) or kind == "ancient" and Color3.fromRGB(196,126,255) or C.teal
+        for side = -1, 1 do
+            ornament("ShoulderPlate", Vector3.new(3.3, 2.1, 3), Vector3.new(side*3.8, 8, 0), C.darkStone, Enum.Material.Slate)
+            ornament("ArmRune", Vector3.new(0.5, 2.3, 0.3), Vector3.new(side*4, 5.7, -1.15), glow, Enum.Material.Neon)
+        end
+        ornament("HeartRune", Vector3.new(2.3, 2.8, 0.35), Vector3.new(0, 6, -2.1), glow, Enum.Material.Neon)
+        if kind == "ancient" then
+            for side = -1, 1 do ornament("CrownHorn", Vector3.new(1.1, 4, 1.1), Vector3.new(side*1.45, 12.6, 0), C.darkStone, Enum.Material.Slate) end
+        end
+    elseif kind == "knight" or kind == "bandit" then
+        ornament("Breastplate", Vector3.new(3.1, 2.6, 0.45), Vector3.new(0, 4.05, -1.15), kind == "knight" and C.stone or C.wood, Enum.Material.Metal)
+        ornament("Pauldron", Vector3.new(1.65, 1.2, 1.8), Vector3.new(1.85, 5.1, 0), C.darkStone, Enum.Material.Metal)
+        if kind == "knight" then ornament("HelmetCrest", Vector3.new(0.5, 1, 2.2), Vector3.new(0, 7.6, 0), C.gold, Enum.Material.Metal) end
+    end
+    -- Species-specific readable details, without requiring external assets.
+    if kind == "boar" then
+        ornament("Mane", Vector3.new(2.5, 1.1, 2.9), Vector3.new(0, 4.2, 0.6), C.wood, Enum.Material.Slate)
+        ornament("Nose", Vector3.new(1.6, 0.65, 0.35), Vector3.new(0, 3.05, -5.1), Color3.fromRGB(204,125,117))
+    elseif kind == "scorpion" then
+        for i = 1, 3 do
+            ornament("TailSegment", Vector3.new(1.1, 1.1, 1.3), Vector3.new(0, 3.3 + i*1.2, 3.3+i*0.23), Color3.fromRGB(139,56,49), Enum.Material.Slate)
+        end
+    elseif kind == "slime" then
+        ornament("InnerCore", Vector3.new(2.1, 1.9, 2.1), Vector3.new(0, 2, 0), Color3.fromRGB(152,241,178), Enum.Material.Neon, Enum.PartType.Ball)
+    elseif kind == "wisp" then
+        ornament("SpiritCore", Vector3.new(1.3, 1.3, 1.3), Vector3.new(0, 1.9, -0.3), C.cream, Enum.Material.Neon, Enum.PartType.Ball)
+    elseif kind == "icewolf" then
+        ornament("IceCrest", Vector3.new(1.05, 1.4, 2.8), Vector3.new(0, 4.25, 0.5), Color3.fromRGB(165,218,247), Enum.Material.Ice)
+    elseif kind == "ashgolem" or kind == "ancient" then
+        local glow = kind == "ashgolem" and Color3.fromRGB(244,91,44) or Color3.fromRGB(190,104,245)
+        for i = 1, 4 do
+            ornament("RiftGlow", Vector3.new(0.35, 1.5, 0.25), Vector3.new((i-2.5)*0.95, 4.2+i*0.5, -2.25), glow, Enum.Material.Neon)
+        end
+    elseif kind == "knight" then
+        ornament("Shield", Vector3.new(2.6, 3.5, 0.55), Vector3.new(-2.55, 3.8, -0.7), Color3.fromRGB(60,85,111), Enum.Material.Metal)
+        ornament("ShieldSigil", Vector3.new(1.25, 1.5, 0.15), Vector3.new(-2.55, 3.8, -1.05), C.gold, Enum.Material.Neon)
     end
     m:SetAttribute("EnemyType", kind)
     m:SetAttribute("Health", def.health)
@@ -950,6 +1044,7 @@ end
 local function portal(parent, pos, region, name, color, rotation)
     local m = model(parent, "Gate_" .. region)
     m:SetAttribute("Region", region)
+    m:SetAttribute("Gateway", true)
     m.PrimaryPart = noCollision(part(m, "TravelStone", Vector3.new(9, 0.5, 9), pos + Vector3.new(0, 0.25, 0), color, Enum.Material.Neon))
     for _, x in ipairs({-6.4, 6.4}) do
         part(m, "Pillar", Vector3.new(2.4, 11, 3), pos + Vector3.new(x, 5.5, 0), C.darkStone, Enum.Material.Slate)
@@ -960,6 +1055,57 @@ local function portal(parent, pos, region, name, color, rotation)
     prompt(m.PrimaryPart, "TravelPrompt", "Viajar", name, 0.4)
     if rotation then m:PivotTo(m.PrimaryPart.CFrame * CFrame.Angles(0, rotation, 0)) end
     return m
+end
+
+local function mountainRim(ground, decorations, region, center, size, rng)
+    local rim = model(ground, "BiomeCliffs_" .. region.id)
+    local palette = {
+        frost={Color3.fromRGB(151,183,205),Enum.Material.Ice},
+        ash={Color3.fromRGB(78,67,68),Enum.Material.Basalt},
+        canyon={Color3.fromRGB(169,98,69),Enum.Material.Sandstone},
+        forest={Color3.fromRGB(73,94,78),Enum.Material.Rock},
+        marsh={Color3.fromRGB(70,91,75),Enum.Material.Ground},
+        grove={Color3.fromRGB(79,130,107),Enum.Material.Grass},
+        meadow={Color3.fromRGB(116,145,90),Enum.Material.Ground},
+    }
+    local style = palette[region.id] or {C.darkStone,Enum.Material.Rock}
+    for side=1,4 do
+        for i=1,20 do
+            local segment=size/20+2
+            local h=rng:NextNumber(90,175)
+            local axis=(i-.5)*size/20-size/2
+            local pos,sz
+            if side<3 then
+                pos=center+Vector3.new(axis,h/2,(side==1 and -1 or 1)*(size/2-20))
+                sz=Vector3.new(segment,h,54)
+            else
+                pos=center+Vector3.new((side==3 and -1 or 1)*(size/2-20),h/2,axis)
+                sz=Vector3.new(54,h,segment)
+            end
+            part(rim,"RockFace",sz,pos,style[1],style[2])
+            local wedge=Instance.new("WedgePart")
+            wedge.Name="Ridgeline"
+            wedge.Anchored=true
+            wedge.Size=Vector3.new(sz.X,rng:NextNumber(15,42),sz.Z)
+            wedge.Color=style[1]
+            wedge.Material=style[2]
+            wedge.CFrame=CFrame.new(pos+Vector3.new(0,h/2+wedge.Size.Y/2,0))*CFrame.Angles(0,side<3 and 0 or math.pi/2,0)
+            wedge.Parent=rim
+        end
+    end
+    for i=1,30 do
+        local x,z=rng:NextNumber(-size*.4,size*.4),rng:NextNumber(-size*.4,size*.4)
+        if math.abs(x)>110 and math.abs(z)>110 then
+            local hill=Instance.new("WedgePart")
+            hill.Name="Hillside"
+            hill.Anchored=true
+            hill.Size=Vector3.new(rng:NextNumber(55,115),rng:NextNumber(14,48),rng:NextNumber(75,140))
+            hill.CFrame=CFrame.new(center+Vector3.new(x,hill.Size.Y/2,z))*CFrame.Angles(0,rng:NextNumber(0,6.28),0)
+            hill.Color=rgb(region.color,C.grass)
+            hill.Material=region.id=="frost" and Enum.Material.Snow or style[2]
+            hill.Parent=decorations
+        end
+    end
 end
 
 local function bridge(parent, pos, alongX)
@@ -1032,7 +1178,7 @@ function World.Build()
     -- The lagoon sits just above Roblox's default Baseplate, while all playable
     -- surfaces are lifted one stud below. A fresh Baseplate template therefore
     -- looks intentional without deleting or editing any user-owned object.
-    local water = noCollision(part(ground, "Lagoon", Vector3.new(820, 1, 820), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
+    local water = noCollision(part(ground, "Lagoon", Vector3.new(12500, 1, 12500), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
     water.Transparency = 0.25
     water.CastShadow = false
     water.CanTouch = false
@@ -1042,17 +1188,15 @@ function World.Build()
         local color = rgb(region.color, C.grass)
         local land = part(ground, "Island_" .. region.id, Vector3.new(size, 8, size), center + Vector3.new(0, -3.95, 0), color, region.id == "quarry" and Enum.Material.Slate or Enum.Material.Grass)
         land:SetAttribute("Region", region.id)
+        mountainRim(ground, decor, region, center, size, rng)
         part(ground, "Cliff_" .. region.id, Vector3.new(size - 6, 18, size - 6), center + Vector3.new(0, -15, 0), C.darkStone, Enum.Material.Slate)
         -- The cardinal roads align with all inter-island bridges and remain clear.
         part(ground, "RoadNS", Vector3.new(14, 0.12, size), center + Vector3.new(0, 0.06, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         part(ground, "RoadEW", Vector3.new(size, 0.1, 14), center + Vector3.new(0, 0.05, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         regionTitle(decor, region, center)
-        if not region.safe then
-            portal(portals, center + Vector3.new(-24, 0, 8), "town", "Voltar a Brumavale", C.teal)
-        end
+        -- Border portals are placed by the adjacency graph below.
     end
-    for _, p in ipairs({Vector3.new(0, 0, 135), Vector3.new(0, 0, -135)}) do bridge(ground, p, false) end
-    for _, p in ipairs({Vector3.new(135, 0, 0), Vector3.new(-135, 0, 0)}) do bridge(ground, p, true) end
+    -- Expanded islands are connected through travel portals instead of short bridges.
 
     -- Town square: readable approaches, service counters, fountain and waystones.
     part(ground, "TownSquare", Vector3.new(116, 0.16, 116), Vector3.new(0, 0.08, 10), Color3.fromRGB(159, 155, 130), Enum.Material.Cobblestone)
@@ -1089,13 +1233,21 @@ function World.Build()
     for _, location in ipairs({{-18, 15}, {18, 15}, {-56, 24}, {56, 24}, {-20, -50}, {20, -50}}) do
         lantern(decor, Vector3.new(location[1], 0, location[2]))
     end
-    local townGates = {
-        {"meadow", Vector3.new(0, 0, 88)}, {"forest", Vector3.new(88, 0, 0)},
-        {"quarry", Vector3.new(-88, 0, 0)}, {"ruins", Vector3.new(0, 0, -88)},
-    }
-    for _, entry in ipairs(townGates) do
-        local region = assert(regionsById[entry[1]], "Missing region " .. entry[1])
-        portal(portals, entry[2], region.id, region.name, rgb(region.color, C.teal), entry[2].X ~= 0 and math.pi / 2 or nil)
+    -- Each gate connects physically neighboring provinces, not a city hub.
+    for _, origin in ipairs(Config.Regions) do
+        local c=vector(origin.center)
+        for _, dest in ipairs(Config.Regions) do
+            local dx=dest.center[1]-origin.center[1]
+            local dz=dest.center[3]-origin.center[3]
+            if (math.abs(dx)==2200 and dz==0) or (math.abs(dz)==2200 and dx==0) then
+                local dir=Vector3.new(dx==0 and 0 or dx/math.abs(dx),0,dz==0 and 0 or dz/math.abs(dz))
+                local gate=portal(portals,c+dir*(origin.size*.36),dest.id,dest.name,rgb(dest.color,C.teal),dx~=0 and math.pi/2 or nil)
+                gate:SetAttribute("OriginRegion",origin.id)
+                local roadCenter=c+dir*(origin.size*.21)
+                local roadSize=dx~=0 and Vector3.new(origin.size*.34,.14,15) or Vector3.new(15,.14,origin.size*.34)
+                part(ground,"GateTrail",roadSize,roadCenter+Vector3.new(0,.12,0),C.paleWood,Enum.Material.Ground)
+            end
+        end
     end
 
     -- Resource placements are curated around the roads, never on arrival areas.
@@ -1109,23 +1261,42 @@ function World.Build()
         forest = {{"tree", -45, 45}, {"tree", 40, 40}, {"tree", 65, -35}, {"tree", -55, -50}, {"tree", 85, 60}, {"tree", -80, 75}, {"fiber", 30, -40}, {"fiber", -35, 50}, {"rock", -70, -70}},
         quarry = {{"rock", -40, 45}, {"rock", 40, 40}, {"rock", 68, -35}, {"ore", -55, -50}, {"ore", 65, 65}, {"ore", -80, 70}, {"ore", 30, -45}, {"ore", -35, 65}, {"crystal", -85, -80}},
         ruins = {{"crystal", -45, 40}, {"crystal", 40, 50}, {"crystal", -65, -40}, {"ore", -85, 65}, {"rock", 75, 75}, {"fiber", 25, -40}},
+        marsh = {{"fiber",-100,90},{"tree",95,-100},{"rock",120,120}},
+        highlands = {{"tree",105,105},{"rock",-120,-110},{"fiber",90,-90}},
+        frost = {{"rock",-120,95},{"ore",105,-110},{"crystal",130,100}},
+        ash = {{"ore",110,120},{"rock",-125,-125},{"crystal",110,-100}},
+        canyon = {{"ore",115,95},{"rock",-110,-120},{"crystal",125,-90}},
+        grove = {{"fiber",105,110},{"tree",-115,-100},{"crystal",110,-100}},
+        citadel = {{"crystal",120,-120},{"ore",-120,105},{"rock",-105,-105}},
     }
     for _, region in ipairs(Config.Regions) do
         for _, row in ipairs(layouts[region.id] or {}) do node(region.id, row[1], row[2], row[3]) end
+        if not region.safe then
+            local kinds = region.id == "marsh" and {"fiber","tree","rock"} or
+                region.id == "grove" and {"fiber","tree","crystal"} or
+                region.id == "meadow" and {"fiber","tree","rock"} or
+                region.id == "forest" and {"tree","fiber","rock"} or {"rock","ore","crystal"}
+            for n = 1, 15 do
+                local x, z = rng:NextNumber(-208,208), rng:NextNumber(-208,208)
+                if math.abs(x) > 24 and math.abs(z) > 24 then
+                    node(region.id, kinds[(n % #kinds)+1], x, z)
+                end
+            end
+        end
     end
     -- Low-density border vegetation creates silhouettes while limiting draw calls.
     for _, region in ipairs(Config.Regions) do
         local center = vector(region.center)
-        if region.id == "town" or region.id == "meadow" or region.id == "forest" then
-            for n = 1, 10 do
-                local angle = n * math.pi * 0.2 + 0.17
-                local pos = center + Vector3.new(math.cos(angle) * 104, 0, math.sin(angle) * 104)
+        if region.id == "town" or region.id == "meadow" or region.id == "forest" or region.id == "grove" or region.id == "marsh" or region.id == "highlands" then
+            for n = 1, 24 do
+                local angle = n * math.pi / 12 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 208, 0, math.sin(angle) * 208)
                 if region.id == "forest" then pine(decor, pos, rng) else tree(decor, pos, rng, region.id == "town") end
             end
         else
-            for n = 1, 10 do
-                local angle = n * math.pi * 0.2 + 0.17
-                local pos = center + Vector3.new(math.cos(angle) * 106, 0, math.sin(angle) * 106)
+            for n = 1, 24 do
+                local angle = n * math.pi / 12 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 208, 0, math.sin(angle) * 208)
                 part(decor, "CliffBoulder", Vector3.new(rng:NextNumber(9, 16), rng:NextNumber(7, 16), rng:NextNumber(9, 16)), CFrame.new(pos + Vector3.new(0, 3, 0)) * CFrame.Angles(0.1, angle, 0.15), C.darkStone, Enum.Material.Slate)
             end
         end
@@ -1144,18 +1315,60 @@ function World.Build()
         noCollision(part(decor, "ForestMushroom", Vector3.new(2.6, 1.3, 2.6), forestCenter + Vector3.new(-65 + n * 4, 1.5, 35), Color3.fromRGB(155, 110, 181), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
     end
 
+    -- Three recognizable landmarks per wilderness region.
+    for _, region in ipairs(Config.Regions) do
+        if not region.safe then
+            local center = vector(region.center)
+            local landmark = model(decor, "Landmark_" .. region.id)
+            for n = 1, 3 do
+                local position = center + Vector3.new((n-2)*65+85, 0, n%2==0 and 140 or -140)
+                if region.id == "ruins" or region.id == "citadel" or region.id == "ash" then
+                    for k = 1, 4 do
+                        part(landmark, "AncientColumn", Vector3.new(4, 8+k*2, 4), position+Vector3.new(k*7,4+k,0),C.darkStone,Enum.Material.Slate)
+                    end
+                elseif region.id == "quarry" or region.id == "canyon" or region.id == "frost" then
+                    for k = 1, 5 do
+                        part(landmark,"RockFormation",Vector3.new(7+k,6+k*2,7+k),position+Vector3.new(k*7,3+k,0),C.stone,Enum.Material.Slate)
+                    end
+                else
+                    house(landmark, position, n*0.7,C.roof)
+                    lantern(landmark,position+Vector3.new(18,0,9))
+                end
+                crate(landmark,position+Vector3.new(-12,0,14),3)
+            end
+        end
+    end
     local enemyIndex = 0
     local spawns = {
         meadow = {{"slime", -68, 40}, {"slime", 65, 50}, {"slime", 45, -70}, {"slime", -65, -65}},
         forest = {{"wolf", -70, 42}, {"wolf", 72, 40}, {"wolf", 45, -75}, {"bandit", -65, -70}},
         quarry = {{"bandit", -70, 40}, {"bandit", 75, 40}, {"bandit", 45, -72}},
         ruins = {{"bandit", -70, 40}, {"bandit", -60, -65}, {"guardian", 65, -55}},
+        marsh = {{"bogling",-110,110},{"bogling",100,-120},{"boar",125,100}},
+        highlands = {{"boar",-120,100},{"wolf",120,-120},{"bandit",100,120}},
+        frost = {{"icewolf",-120,110},{"icewolf",120,-110},{"wisp",110,120}},
+        ash = {{"ashgolem",-120,105},{"wisp",120,-115},{"ashgolem",110,110}},
+        canyon = {{"scorpion",-120,110},{"scorpion",120,-100},{"knight",115,120}},
+        grove = {{"wisp",-120,105},{"boar",120,-120},{"wisp",110,110}},
+        citadel = {{"knight",-120,100},{"knight",120,-110},{"ancient",105,115}},
     }
     for _, region in ipairs(Config.Regions) do
-        for _, row in ipairs(spawns[region.id] or {}) do
-            enemyIndex = enemyIndex + 1
-            local m = enemy(enemies, row[1], vector(region.center) + Vector3.new(row[2], 0, row[3]), enemyIndex)
-            m:SetAttribute("Region", region.id)
+        if not region.safe then
+            local entries = spawns[region.id] or {}
+            for _, row in ipairs(entries) do
+                enemyIndex += 1
+                local m = enemy(enemies,row[1],vector(region.center)+Vector3.new(row[2],0,row[3]),enemyIndex)
+                m:SetAttribute("Region",region.id)
+            end
+            for n = 1, 5 do
+                local kind = entries[(n % #entries)+1][1]
+                local x,z = rng:NextNumber(-205,205),rng:NextNumber(-205,205)
+                if math.abs(x) < 24 then x += 50 end
+                if math.abs(z) < 24 then z += 50 end
+                enemyIndex += 1
+                local m = enemy(enemies,kind,vector(region.center)+Vector3.new(x,0,z),enemyIndex)
+                m:SetAttribute("Region",region.id)
+            end
         end
     end
 
@@ -1625,12 +1838,67 @@ local function animateMonsterAttack(record, now)
 	if now >= attackState.resolves then resolveMonsterAttack(record) end
 end
 
+
+-- Each anchored enemy has a lightweight procedural rig: relative part poses
+-- are evaluated after movement. No uploaded animations or external assets.
+local function captureEnemyRig(model)
+    local rest = {}
+    local pivot = model:GetPivot()
+    for _, item in ipairs(model:GetDescendants()) do
+        if item:IsA("BasePart") and item ~= model.PrimaryPart then
+            table.insert(rest, {part=item, offset=pivot:ToObjectSpace(item.CFrame), name=item.Name})
+        end
+    end
+    return rest
+end
+
+local function poseEnemy(record, now, moving, distance)
+    if distance > 120 and not record.attack then return end
+    local model = record.model
+    if not model.PrimaryPart then return end
+    local state = model:GetAttribute("AttackState")
+    local attacking = state == "Windup" or state == "Impact"
+    local rate = record.config.speed > 12 and 9 or 6
+    local phase = now * rate + record.phase
+    local intensity = moving and 1 or 0.12
+    local rise = math.sin(phase * 2) * (moving and 0.13 or 0.05)
+    local attackWave = attacking and math.sin(now * 18) * 0.24 or 0
+    local creature = model:GetAttribute("EnemyType")
+    local stagger = math.max(0, 1 - (now - (record.lastHit or -100)) / 0.35)
+    local windup = record.attack and math.clamp((now - record.attack.started) / record.attack.windup, 0, 1) or 0
+    local root = model:GetPivot()
+    for _, joint in ipairs(record.rig) do
+        local p = joint.part
+        if p.Parent then
+            local name = joint.name
+            local transform = CFrame.new(0, rise, 0)
+            if name == "Leg" or name == "ScorpionLeg" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and 0 or math.pi)) * (creature == "scorpion" and 0.42 or 0.32) * intensity, 0, 0)
+            elseif name == "Arm" or name == "Claw" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and math.pi or 0)) * 0.24 * intensity - attackWave, 0, side * attackWave)
+            elseif name == "Tail" or name == "Stinger" or name == "StingerTip" or name == "TailSegment" then
+                transform = transform * CFrame.Angles(math.sin(phase * 0.6) * 0.15 - (creature == "scorpion" and windup * 0.45 or 0), math.sin(phase * 0.7) * 0.25, 0)
+            elseif name == "Head" or name == "HelmetCrest" or name == "CrownHorn" or name == "Hood" or name == "Mask" then
+                transform = transform * CFrame.Angles(-attackWave * 0.7, math.sin(phase * 0.35) * 0.08, 0)
+            elseif name == "SpiritFlame" or name == "MireSpike" or name == "SpiritCore" or name == "InnerCore" then
+                transform = transform * CFrame.new(0, math.sin(phase + joint.offset.Position.X) * 0.4, 0)
+            end
+            if stagger > 0 then transform = transform * CFrame.Angles(math.rad(14) * stagger, 0, math.rad(10) * stagger) end
+            p.CFrame = root * joint.offset * transform
+        end
+    end
+end
+
+local mobIndex = 0
 for _, model in ipairs(world.Enemies:GetChildren()) do
 	local config = Config.Enemies[model:GetAttribute("EnemyType")]
 	if model:IsA("Model") and model.PrimaryPart and config then
+        mobIndex += 1
 		local record = {
-			model=model, config=config, health=config.health, home=model:GetPivot(),
-			appearance=savedAppearance(model), nextAttack=0, attack=nil, target=nil,
+			model=model, index=mobIndex, config=config, health=config.health, home=model:GetPivot(),
+			appearance=savedAppearance(model), rig=captureEnemyRig(model), phase=#model.Name * 0.71, nextAttack=0, attack=nil, target=nil,
 		}
 		mobs[model] = record
 		model:SetAttribute("Alive", true)
@@ -1643,11 +1911,16 @@ local function hurtEnemy(player, record, amount)
 	if record.health <= 0 then return end
 	record.health = math.max(0, record.health - amount)
 	record.target = player
+    record.lastHit = os.clock()
 	updateEnemyLabel(record)
 	if record.health > 0 then return end
 	cancelMonsterAttack(record)
 	record.model:SetAttribute("Alive", false)
-	visibility(record.model, false, record.appearance)
+    record.model:SetAttribute("AttackState", "Dead")
+    record.model:PivotTo(record.model:GetPivot() * CFrame.Angles(math.rad(62), 0, math.rad(10)))
+    task.delay(0.4, function()
+        if record.model.Parent and record.health <= 0 then visibility(record.model, false, record.appearance) end
+    end)
 	local profile = Profiles.Get(player)
 	if profile then
 		profile.stats.kills += 1
@@ -1663,6 +1936,8 @@ local function hurtEnemy(player, record, amount)
 		record.model:PivotTo(record.home)
 		record.health, record.target, record.nextAttack, record.attack = record.config.health, nil, 0, nil
 		record.model:SetAttribute("Alive", true)
+        record.model:SetAttribute("AttackState", "Idle")
+        record.lastHit = nil
 		visibility(record.model, true, record.appearance)
 		updateEnemyLabel(record)
 	end)
@@ -1765,17 +2040,23 @@ local function travel(player, id)
 	if not destination then return end
 	local validPortal = false
 	for _, portal in ipairs(world.Portals:GetChildren()) do
-		if portal:GetAttribute("Region") == id and portal.PrimaryPart
-			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 18 then
+		if portal:GetAttribute("Region") == id and portal:GetAttribute("OriginRegion") == (regionAt(root.Position) and regionAt(root.Position).id) and portal.PrimaryPart
+			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 16 then
 			validPortal = true; break
 		end
 	end
 	if not validPortal then notify(player, "Aproxime-se do portal dessa região."); return end
 	if not cooldown(player, "travel", 2) then return end
-	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 5, 20)
+	local previous = regionAt(root.Position)
+    local arrivalCenter=Vector3.new(table.unpack(destination.center))
+    local previousCenter=previous and Vector3.new(table.unpack(previous.center)) or Vector3.zero
+    local incoming=previousCenter-arrivalCenter
+    if incoming.Magnitude < 1 then return end
+    local position=arrivalCenter+incoming.Unit*(destination.size*.32)+Vector3.new(0,7,0)
 	player.Character:PivotTo(CFrame.new(position))
 	root.AssemblyLinearVelocity, root.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
 	sessions[player].region = id
+    sessions[player].lastPortalAt = os.clock()
 	player:SetAttribute("Region", id)
 	update(player, "Você chegou a " .. destination.name .. ".")
 end
@@ -2010,6 +2291,7 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		if record.attack then
 			animateMonsterAttack(record, now)
+			poseEnemy(record, now, false, 0)
 			continue
 		end
 		local position = model.PrimaryPart.Position
@@ -2032,13 +2314,44 @@ RunService.Heartbeat:Connect(function(dt)
 		local attackDefinition = record.config.attack or {range=5.5}
 		local attackRange = attackDefinition.range or attackDefinition.radius or 5.5
 		local stopDistance = targetRoot and math.max(3.2, math.min(attackRange * 0.82, attackRange - 0.35)) or 0.5
-		if flat.Magnitude > stopDistance then
-			local advance = flat.Unit * math.min(flat.Magnitude, record.config.speed * step)
-			local nextPosition = model:GetPivot().Position + advance
-			model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + flat.Unit))
-		elseif targetHumanoid and now >= (record.nextAttack or 0) and lineOfSight(target.Character, model) then
-			startMonsterAttack(record, targetRoot, now)
-		end
+        -- Attack first: an enemy already within its attack radius should not
+        -- freeze indefinitely while trying to move toward the exact same point.
+        local inRange = targetRoot ~= nil and flat.Magnitude <= attackRange
+        if targetHumanoid and inRange and now >= (record.nextAttack or 0)
+            and (lineOfSight(target.Character, model) or flat.Magnitude < 7) then
+            startMonsterAttack(record, targetRoot, now)
+        else
+            -- Soft separation keeps enemies from occupying each other's space.
+            -- All models are anchored, so Roblox physics cannot separate them.
+            local push = Vector3.zero
+            local neighbors = 0
+            for otherModel, other in pairs(mobs) do
+                if other ~= record and other.health > 0 and otherModel.PrimaryPart then
+                    local difference = position - otherModel.PrimaryPart.Position
+                    local horizontal = Vector3.new(difference.X, 0, difference.Z)
+                    local distance = horizontal.Magnitude
+                    local clearance = (record.config.health >= 300 or other.config.health >= 300) and 9 or 6.8
+                    if distance < clearance then
+                        if distance < 0.1 then
+                            local angle = record.index * 2.399963 + other.index * 0.71
+                            horizontal = Vector3.new(math.cos(angle), 0, math.sin(angle))
+                            distance = 1
+                        end
+                        push += horizontal.Unit * ((clearance - distance) / clearance)
+                        neighbors += 1
+                    end
+                end
+            end
+            if neighbors > 0 then push = push / math.sqrt(neighbors) end
+            local seek = flat.Magnitude > stopDistance and flat.Unit or Vector3.zero
+            local desired = seek + push * 2.4
+            if desired.Magnitude > 0.02 then
+                local velocity = desired.Unit * math.min(record.config.speed * step, math.max(2, flat.Magnitude))
+                local nextPosition = model:GetPivot().Position + velocity
+                model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + desired.Unit))
+            end
+        end
+		poseEnemy(record, now, flat.Magnitude > stopDistance, target and nearest or math.huge)
 		if not target and (model:GetPivot().Position - record.home.Position).Magnitude < 1 and record.health < record.config.health then
 			record.health = record.config.health
 			updateEnemyLabel(record)
@@ -2051,6 +2364,19 @@ RunService.Heartbeat:Connect(function(dt)
 			local root, humanoid = body(player)
 			if root and session.ready then
 				local region = regionAt(root.Position)
+                -- Never allow walking, jumping or falling into another map.
+                -- Travel() is the only legitimate cross-region transfer.
+                if not region or (session.region and region.id ~= session.region) then
+                    local old
+                    for _, defined in ipairs(Config.Regions) do
+                        if defined.id == (session.region or "town") then old=defined break end
+                    end
+                    old=old or Config.Regions[1]
+                    local safePoint = Vector3.new(table.unpack(old.center)) + Vector3.new(0,7, old.safe and -120 or 90)
+                    player.Character:PivotTo(CFrame.new(safePoint))
+                    root.AssemblyLinearVelocity=Vector3.zero
+                    region=old
+                end
 				local id = region and region.id or "wilds"
 				if id ~= session.region then
 					session.region = id
@@ -2233,20 +2559,179 @@ clientEffects.Name = "BrumavaleClientEffects"
 clientEffects.Parent = world
 
 local function motor(character, ...)
-    for index = 1, select("#", ...) do
-        local joint = character:FindFirstChild(select(index, ...), true)
-        if joint and joint:IsA("Motor6D") then return joint end
+    local names = {}
+    for index = 1, select("#", ...) do names[select(index, ...)] = true end
+    -- Some custom avatars rename Motor6D joints; search both name and Part1.
+    for _, object in ipairs(character:GetDescendants()) do
+        if object:IsA("Motor6D") and names[object.Name] then return object end
+    end
+    local requested = select(1, ...)
+    local target = requested == "RightShoulder" and {"RightUpperArm", "Right Arm"}
+        or requested == "LeftShoulder" and {"LeftUpperArm", "Left Arm"}
+        or requested == "Waist" and {"UpperTorso", "Torso"}
+        or requested == "Neck" and {"Head"} or {}
+    for _, partName in ipairs(target) do
+        for _, object in ipairs(character:GetDescendants()) do
+            if object:IsA("Motor6D") and object.Part1 and object.Part1.Name == partName then
+                return object
+            end
+        end
     end
     return nil
 end
 
+-- Animate Motor6D.C0, not Transform: Roblox's Animator can overwrite Transform
+-- before the pose reaches the screen. Store each rig's original C0 for recovery.
 local function resetCombatAnimation(state)
-    for _, joint in pairs(state.motors or {}) do
-        if joint and joint.Parent then joint.Transform = CFrame.new() end
+    for _, entry in pairs(state.motors or {}) do
+        if entry and entry.joint and entry.joint.Parent then
+            entry.joint.C0 = entry.original
+        end
+    end
+end
+local function jointEntry(character, ...)
+    local joint = motor(character, ...)
+    return joint and {joint=joint, original=joint.C0} or nil
+end
+local function poseJoint(entry, offset)
+    if entry and entry.joint and entry.joint.Parent then
+        entry.joint.C0 = entry.original * offset
     end
 end
 
-local animationDurations = {basic=0.48, cleave=0.78, gather=0.68, potion=0.72, hit=0.3}
+-- Use native Roblox AnimationTracks as the primary animation path.
+-- Default Roblox sword slash/lunge are keyframed and work on standard R15/R6 rigs.
+local nativeTracks = {}
+local comboIndex = {}
+local lastComboAt = {}
+local nativeIds = {
+    R15 = {basic="522635514", cleave="522638767", gather="522635514", hit="522638767"},
+    R6 = {basic="129967390", cleave="129967478", gather="129967390", hit="129967478"},
+}
+local function playNativeAnimation(actor, action)
+    local character = actor.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return false, "sem Humanoid" end
+    local rigType = humanoid.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
+    local combo = comboIndex[character] or 1
+    local id = nativeIds[rigType][action]
+    -- Deliberately avoid the spinning lunge; short horizontal slashes read as swordplay.
+    if action == "basic" and combo == 3 then id = nativeIds[rigType].basic end
+    if action == "cleave" then id = nativeIds[rigType].basic end
+    if not id then return false, "sem animacao para " .. action end
+    local animator = humanoid:FindFirstChildOfClass("Animator")
+    if not animator then
+        animator = Instance.new("Animator")
+        animator.Parent = humanoid
+    end
+    local slot = nativeTracks[character]
+    if slot and slot.track then pcall(function() slot.track:Stop(0.08) end) end
+    local animation = Instance.new("Animation")
+    animation.Name = "Brumavale_" .. action
+    animation.AnimationId = "rbxassetid://" .. id
+    local ok, track = pcall(function() return animator:LoadAnimation(animation) end)
+    animation:Destroy()
+    if not ok or not track then
+        return false, tostring(track)
+    end
+    track.Priority = Enum.AnimationPriority.Action4
+    track.Looped = false
+    local played, err = pcall(function() track:Play(0.10, 1, action == "cleave" and 0.72 or (action == "basic" and (combo == 2 and 1.08 or combo == 3 and 0.88 or 0.98) or 1)) end)
+    if not played then return false, tostring(err) end
+    nativeTracks[character] = {track=track, action=action}
+    track.Stopped:Once(function()
+        if nativeTracks[character] and nativeTracks[character].track == track then nativeTracks[character] = nil end
+        track:Destroy()
+    end)
+    return true, "AnimationTrack " .. tostring(id)
+end
+local animationDurations = {basic=0.52, cleave=0.82, gather=0.68, potion=0.72, hit=0.34}
+local attackCombo = {}
+local lastLocalAttack = 0
+local swordVisuals = {}
+local swordSwings = {}
+local function swingSword(character, action, combo)
+    local sword = swordVisuals[character]
+    local grip = sword and sword:FindFirstChild("Grip")
+    local weld = grip and grip:FindFirstChild("HandMount")
+    if not weld or not weld:IsA("Weld") then return end
+    local base = weld:GetAttribute("BrumavaleBase") -- position is held in script state below
+    local swing = swordSwings[character]
+    if swing and swing.weld == weld then
+        for _, tween in ipairs(swing.tweens) do tween:Cancel() end
+        weld.C0 = swing.base
+    end
+    local rest = swing and swing.weld == weld and swing.base or weld.C0
+    local direction = combo == 2 and -1 or 1
+    local windup = action == "cleave" and 0.23 or 0.17
+    local release = action == "cleave" and 0.32 or 0.23
+    local raised = rest * CFrame.Angles(math.rad(-24), 0, math.rad(25 * direction))
+    local follow = rest * CFrame.Angles(math.rad(36), math.rad(12 * direction), math.rad(-48 * direction))
+    local sequence = {weld=weld, base=rest, tweens={}}
+    swordSwings[character] = sequence
+    local function tween(goal, seconds, easing)
+        local tw = TweenService:Create(weld, TweenInfo.new(seconds, easing or Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {C0=goal})
+        table.insert(sequence.tweens, tw)
+        return tw
+    end
+    local up = tween(raised, windup, Enum.EasingStyle.Quad)
+    up.Completed:Connect(function(state)
+        if state ~= Enum.PlaybackState.Completed or swordSwings[character] ~= sequence then return end
+        local strike = tween(follow, release)
+        strike.Completed:Connect(function(finished)
+            if finished ~= Enum.PlaybackState.Completed or swordSwings[character] ~= sequence then return end
+            local recovery = tween(rest, 0.20, Enum.EasingStyle.Sine)
+            recovery.Completed:Connect(function()
+                if swordSwings[character] == sequence then swordSwings[character] = nil end
+            end)
+            recovery:Play()
+        end)
+        strike:Play()
+    end)
+    up:Play()
+end
+
+local function ensureSwordVisual(character)
+    local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+    if not hand or not hand:IsA("BasePart") then return end
+    local existing = swordVisuals[character]
+    if existing and existing.Parent and existing:FindFirstChild("Grip") then return end
+    local sword = Instance.new("Model")
+    sword.Name = "BrumavaleCombatSword"
+    local function segment(name, size, color, material, offset)
+        local p = Instance.new("Part")
+        p.Name = name
+        p.Size = size
+        p.Color = color
+        p.Material = material
+        p.CanCollide = false
+        p.CanQuery = false
+        p.CanTouch = false
+        p.Massless = true
+        p.Anchored = false
+        p.CFrame = hand.CFrame * offset
+        p.Parent = sword
+        return p
+    end
+    local grip = segment("Grip", Vector3.new(0.35, 1.35, 0.35), Color3.fromRGB(72, 48, 35), Enum.Material.Wood, CFrame.new(0, -0.65, -0.15))
+    local guard = segment("Crossguard", Vector3.new(1.7, 0.3, 0.35), Color3.fromRGB(225, 178, 83), Enum.Material.Metal, CFrame.new(0, -1.55, -0.15))
+    local blade = segment("Blade", Vector3.new(0.42, 3.9, 0.16), Color3.fromRGB(208, 225, 230), Enum.Material.Metal, CFrame.new(0, -3.6, -0.15))
+    local point = segment("BladeTip", Vector3.new(0.28, 0.7, 0.12), Color3.fromRGB(239, 246, 255), Enum.Material.Metal, CFrame.new(0, -5.8, -0.15))
+    for _, p in ipairs({guard, blade, point}) do
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = grip
+        weld.Part1 = p
+        weld.Parent = p
+    end
+    local handWeld = Instance.new("Weld")
+    handWeld.Name = "HandMount"
+    handWeld.Part0 = hand
+    handWeld.Part1 = grip
+    handWeld.C0 = hand.CFrame:ToObjectSpace(grip.CFrame)
+    handWeld.Parent = grip
+    sword.Parent = character
+    swordVisuals[character] = sword
+end
 local function startCombatAnimation(actor, action)
     if typeof(actor) ~= "Instance" or not actor:IsA("Player") or actor.Parent ~= Players or type(action) ~= "string" then return end
     local character = actor.Character
@@ -2257,16 +2742,80 @@ local function startCombatAnimation(actor, action)
     if actor ~= player and (not localRoot or not actorRoot or (localRoot.Position - actorRoot.Position).Magnitude > 160) then return end
     local previous = combatAnimations[character]
     if previous then resetCombatAnimation(previous) end
+    if action == "basic" then
+        local now = os.clock()
+        if now - (lastComboAt[character] or -10) > 1.4 then attackCombo[character] = 0 end
+        attackCombo[character] = ((attackCombo[character] or 0) % 3) + 1
+        lastComboAt[character] = now
+        comboIndex[character] = attackCombo[character]
+    end
+    if action == "basic" or action == "cleave" then
+        ensureSwordVisual(character)
+        swingSword(character, action, attackCombo[character] or 1)
+    end
+    local nativeOK, nativeMessage = playNativeAnimation(actor, action)
+    if actor == player then
+        gui:SetAttribute("NativeAnimation", nativeOK and nativeMessage or "FALHOU: " .. nativeMessage)
+        if not nativeOK then warn("[Brumavale Anim] Falha no Animator: " .. nativeMessage) end
+    end
+    local joints = {
+        right=jointEntry(character, "RightShoulder", "Right Shoulder"),
+        left=jointEntry(character, "LeftShoulder", "Left Shoulder"),
+        waist=jointEntry(character, "Waist", "RootJoint", "Root Joint"),
+        neck=jointEntry(character, "Neck"),
+    }
+    local rig = humanoid.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
+    local count = 0
+    for _, entry in pairs(joints) do if entry then count += 1 end end
+    if actor == player then
+        gui:SetAttribute("CombatRig", rig)
+        gui:SetAttribute("CombatJoints", count)
+        gui:SetAttribute("CombatAction", action)
+        if count == 0 then
+            warn("[Brumavale Anim] Nenhuma junta encontrada em " .. character:GetFullName())
+        end
+    end
     combatAnimations[character] = {
-        action=action, started=os.clock(), duration=animationDurations[action],
-        motors={
-            right=motor(character, "RightShoulder", "Right Shoulder"),
-            left=motor(character, "LeftShoulder", "Left Shoulder"),
-            waist=motor(character, "Waist", "RootJoint", "Root Joint"),
-            neck=motor(character, "Neck"),
-        },
+        action=action, combo=attackCombo[character] or 1, started=os.clock(), duration=animationDurations[action],
+        motors=joints,
     }
 end
+
+-- Diagnostic stays visible: proves whether a real avatar rig receives poses.
+local animStatus = Instance.new("TextLabel")
+animStatus.Name = "AnimationStatus"
+animStatus.Size = UDim2.fromOffset(350, 26)
+animStatus.AnchorPoint = Vector2.new(0.5, 0)
+animStatus.Position = UDim2.new(0.5, 0, 0, 70)
+animStatus.BackgroundTransparency = 0.3
+animStatus.BackgroundColor3 = Color3.fromRGB(20, 30, 39)
+animStatus.TextColor3 = Color3.fromRGB(255, 223, 142)
+animStatus.TextSize = 13
+animStatus.Font = Enum.Font.GothamBold
+animStatus.Text = "Brumavale Anim: aguardando teste"
+animStatus.Parent = gui
+local function refreshAnimationStatus()
+    animStatus.Text = string.format("ANIM %s | joints %s | %s",
+        tostring(gui:GetAttribute("CombatRig") or "?"),
+        tostring(gui:GetAttribute("CombatJoints") or "?"),
+        tostring(gui:GetAttribute("NativeAnimation") or "aguardando"))
+end
+gui:GetAttributeChangedSignal("CombatAction"):Connect(refreshAnimationStatus)
+gui:GetAttributeChangedSignal("NativeAnimation"):Connect(refreshAnimationStatus)
+local animTest = Instance.new("TextButton")
+animTest.Name = "TestPlayerAnimation"
+animTest.Size = UDim2.fromOffset(170, 30)
+animTest.AnchorPoint = Vector2.new(0.5, 0)
+animTest.Position = UDim2.new(0.5, 0, 0, 99)
+animTest.BackgroundColor3 = Color3.fromRGB(52, 81, 91)
+animTest.TextColor3 = Color3.new(1, 1, 1)
+animTest.TextSize = 13
+animTest.Font = Enum.Font.GothamBold
+animTest.Text = "TESTAR ANIMACAO"
+animTest.Parent = gui
+animTest.Activated:Connect(function()
+    startCombatAnimation(player, "cleave")
+end)
 
 local function effectPart(size, cframe, color, life, shape)
     if #clientEffects:GetChildren() >= 150 then return nil end
@@ -2354,18 +2903,19 @@ local function animateCombat(now)
         local motors = state.motors
         local right, left, waist, neck = CFrame.new(), CFrame.new(), CFrame.new(), CFrame.new()
         if state.action == "basic" then
+            local direction = state.combo == 2 and -1 or 1
             if progress < 0.28 then
                 local alpha = progress / 0.28
-                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)), alpha)
-                waist = CFrame.Angles(0, math.rad(35 * alpha), 0)
+                right = CFrame.new():Lerp(CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55 * direction)), alpha)
+                waist = CFrame.Angles(0, math.rad(35 * alpha * direction), math.rad(8 * alpha))
             elseif progress < 0.62 then
                 local alpha = (progress - 0.28) / 0.34
-                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)), alpha)
-                waist = CFrame.Angles(0, math.rad(35 - 85 * alpha), 0)
+                right = CFrame.Angles(math.rad(-80), math.rad(-20), math.rad(55 * direction)):Lerp(CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70 * direction)), alpha)
+                waist = CFrame.Angles(0, math.rad((35 - 85 * alpha) * direction), math.rad(-12 * math.sin(alpha * math.pi)))
             else
                 local alpha = (progress - 0.62) / 0.38
-                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70)):Lerp(CFrame.new(), alpha)
-                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha)), 0)
+                right = CFrame.Angles(math.rad(55), math.rad(20), math.rad(-70 * direction)):Lerp(CFrame.new(), alpha)
+                waist = CFrame.Angles(0, math.rad(-50 * (1 - alpha) * direction), 0)
             end
         elseif state.action == "cleave" then
             local swing = math.sin(progress * math.pi)
@@ -2388,10 +2938,12 @@ local function animateCombat(now)
             left = CFrame.Angles(math.rad(35 * recoil), 0, math.rad(-25 * recoil))
             waist = CFrame.Angles(math.rad(-18 * recoil), 0, math.rad(12 * recoil))
         end
-        if motors.right and motors.right.Parent then motors.right.Transform = right end
-        if motors.left and motors.left.Parent then motors.left.Transform = left end
-        if motors.waist and motors.waist.Parent then motors.waist.Transform = waist end
-        if motors.neck and motors.neck.Parent then motors.neck.Transform = neck end
+        -- Elbow and body poses remain visible even while the default idle/run
+        -- tracks play, and the original joints are restored after each action.
+        poseJoint(motors.right, right)
+        poseJoint(motors.left, left)
+        poseJoint(motors.waist, waist)
+        poseJoint(motors.neck, neck)
         if elapsed >= state.duration or not character.Parent then
             resetCombatAnimation(state)
             combatAnimations[character] = nil
@@ -2409,7 +2961,10 @@ FX.OnClientEvent:Connect(function(event, payload)
         local actor = payload.player
         local action = payload.skill or payload.action
         if typeof(actor) == "Instance" and actor:IsA("Player") and actor.Parent == Players and type(action) == "string" then
-            startCombatAnimation(actor, action)
+            -- Local prediction already started this attack: avoid rewinding its pose.
+            if actor ~= player or (event ~= "playerAttack" or os.clock() - lastLocalAttack > 1.1) then
+                startCombatAnimation(actor, action)
+            end
             actionEffect(actor, action, payload.target)
         end
     elseif event == "monsterWindup" then
@@ -2528,6 +3083,8 @@ local function attack(skill)
         toast("Aproxime-se do alvo para atacar.") return
     end
     cooldowns[skill] = os.clock() + (skill == "cleave" and 5 or 0.65)
+    lastLocalAttack = os.clock()
+    startCombatAnimation(player, skill)
     send("attack", {target = selectedEnemy, skill = skill})
 end
 local function usePotion()
@@ -2638,24 +3195,118 @@ local function itemDetails(id)
     if item.heal then details = details .. "  •  +" .. item.heal .. " vida" end
     return details
 end
+-- Albion-inspired inventory composition: equipment left, item grid right.
+-- Drag-and-drop equips on the server; local rearrangement is cosmetic only.
+local inventoryPositions = {}
+local dragState = nil
+local function inventoryColor(id)
+    local item = Config.Items[id]
+    if not item then return palette.muted end
+    if item.tier >= 3 then return Color3.fromRGB(157, 115, 222) end
+    if item.tier == 2 then return Color3.fromRGB(92, 157, 204) end
+    return palette.gold
+end
+local function within(point, guiObject)
+    if not guiObject or not guiObject.Parent then return false end
+    local origin, size = guiObject.AbsolutePosition, guiObject.AbsoluteSize
+    return point.X >= origin.X and point.Y >= origin.Y and point.X <= origin.X + size.X and point.Y <= origin.Y + size.Y
+end
+local equipTargets = {}
+local inventoryDropConnection
 local function showInventory()
-    pageTitle.Text = "Sua mochila"
-    pageHint.Text = "Selecione equipamentos para vestir. Vendas exigem proximidade do mercador; anúncios, do mercado."
-    local inventory = snapshot.inventory or {}
-    local ids = sortedItems(function(id) return (inventory[id] or 0) > 0 end)
-    if #ids == 0 then row(1, "Mochila vazia", "Colete recursos nas regiões próximas à cidade.", "·", palette.muted) end
-    for index, id in ipairs(ids) do
-        local equipped = snapshot.equipment and (snapshot.equipment.weapon == id or snapshot.equipment.armor == id)
-        row(index, itemName(id) .. " ×" .. tostring(inventory[id]), itemDetails(id) .. (equipped and "  •  equipado" or ""), itemSymbols[id], equipped and palette.teal or palette.gold, "Selecionar", function() selectedItem = id renderPage() end, selectedItem == id)
+    pageTitle.Text = "Equipamento e inventário"
+    pageHint.Text = "Arraste armas ou armaduras para equipar. Arraste itens entre espaços para organizar a mochila."
+    expandBody()
+    body.ScrollingEnabled = false
+    body.CanvasSize = UDim2.new()
+    local contents = frame(body, {Size=UDim2.new(1, -6, 0, 322), BackgroundColor3=palette.panel, LayoutOrder=1, ZIndex=12})
+    local equipment = frame(contents, {Position=UDim2.fromOffset(9, 9), Size=UDim2.fromOffset(220, 303), BackgroundColor3=palette.ink, ZIndex=13})
+    label(equipment, "EQUIPAMENTO", {Position=UDim2.fromOffset(12, 8), Size=UDim2.fromOffset(192, 20), TextSize=12, Font=Enum.Font.GothamBold, TextColor3=palette.gold, ZIndex=14})
+    label(equipment, "AVENTUREIRO", {Position=UDim2.fromOffset(12, 31), Size=UDim2.fromOffset(192, 15), TextSize=10, TextColor3=palette.muted, ZIndex=14})
+    local itemCount = snapshot.inventory or {}
+    equipTargets = {}
+    local function makeSlot(parent, id, title, itemId, position, size)
+        local tile = button(parent, "", {Position=position, Size=size, BackgroundColor3=palette.raised, Text="", ZIndex=15}, function()
+            if id and id ~= "" then selectedItem=id end
+        end)
+        stroke(tile, itemId and inventoryColor(itemId) or palette.edge)
+        label(tile, title, {Position=UDim2.fromOffset(6, 5), Size=UDim2.new(1,-12,0,15), TextSize=9, TextColor3=palette.muted, ZIndex=16})
+        if itemId then
+            label(tile, itemSymbols[itemId] or "◇", {Position=UDim2.fromOffset(6, 19), Size=UDim2.fromOffset(35,32), TextSize=21, Font=Enum.Font.GothamBold, TextColor3=inventoryColor(itemId), ZIndex=16})
+            label(tile, itemName(itemId), {Position=UDim2.fromOffset(45,20), Size=UDim2.new(1,-49,0,31), TextSize=10, TextWrapped=true, ZIndex=16})
+        end
+        return tile
     end
-    local item = Config.Items[selectedItem]
-    footerTitle.Text = item and item.name or "Selecione um item"
-    footerHint.Text = item and ("Venda: " .. tostring(item.sell or 0) .. " prata/un.  •  Peso: " .. tostring(item.weight or 0) .. "  •  Dano " .. tostring(snapshot.damage or 0) .. " / Defesa " .. tostring(snapshot.defense or 0)) or ""
-    footerAction(item and item.kind == "consumable" and "Usar" or "Equipar", function()
-        if item and item.kind == "consumable" then send("use", {item = selectedItem}) else send("equip", {item = selectedItem}) end
-    end, palette.teal, 3)
-    footerAction("Vender", function() send("sell", {item = selectedItem, count = quantity()}) end, palette.gold, 3)
-    footerAction("Anunciar", function() openPanel("market") end, palette.text, 3)
+    local eq = snapshot.equipment or {}
+    equipTargets.weapon = makeSlot(equipment, eq.weapon, "ARMA", eq.weapon, UDim2.fromOffset(12, 59), UDim2.fromOffset(196, 62))
+    equipTargets.armor = makeSlot(equipment, eq.armor, "ARMADURA", eq.armor, UDim2.fromOffset(12, 128), UDim2.fromOffset(196, 62))
+    label(equipment, "DANO  " .. tostring(snapshot.damage or 0) .. "   |   DEFESA  " .. tostring(snapshot.defense or 0), {Position=UDim2.fromOffset(12,209), Size=UDim2.fromOffset(195,25), TextSize=10, TextColor3=palette.teal, ZIndex=14})
+    label(equipment, "Arraste o item da mochila\npara o espaço correspondente.", {Position=UDim2.fromOffset(12,240), Size=UDim2.fromOffset(195,43), TextSize=10, TextWrapped=true, TextColor3=palette.muted, ZIndex=14})
+    local bag = frame(contents, {Position=UDim2.fromOffset(240,9), Size=UDim2.new(1,-249,1,-18), BackgroundColor3=palette.ink, ZIndex=13})
+    label(bag, "MOCHILA", {Position=UDim2.fromOffset(10,6), Size=UDim2.new(1,-20,0,21), TextSize=12, Font=Enum.Font.GothamBold, TextColor3=palette.gold, ZIndex=14})
+    label(bag, "Peso " .. tostring(math.floor((snapshot.weight or 0)*10)/10) .. " / " .. tostring(Config.Capacity), {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-10,0,8), Size=UDim2.fromOffset(125,17), TextSize=10, TextXAlignment=Enum.TextXAlignment.Right, TextColor3=palette.muted, ZIndex=14})
+    local columns, cell, gap = 8, 51, 5
+    local grid = frame(bag, {Position=UDim2.fromOffset(10,34), Size=UDim2.new(1,-20,1,-43), BackgroundTransparency=1, ZIndex=14})
+    local ids = sortedItems(function(id) return (itemCount[id] or 0)>0 end)
+    local order = {}
+    for _, id in ipairs(ids) do
+        local pos = inventoryPositions[id]
+        if pos and pos >= 1 and pos <= 32 and not order[pos] then order[pos]=id end
+    end
+    for _, id in ipairs(ids) do
+        local found=false
+        for _, occupied in pairs(order) do if occupied==id then found=true break end end
+        if not found then for i=1,32 do if not order[i] then order[i]=id break end end end
+    end
+    local slotObjects = {}
+    for i=1,32 do
+        local id=order[i]
+        local col,rowIndex=(i-1)%columns, math.floor((i-1)/columns)
+        local tile=button(grid,"",{Position=UDim2.fromOffset(col*(cell+gap),rowIndex*(cell+gap)),Size=UDim2.fromOffset(cell,cell),BackgroundColor3=palette.raised,Text="",ZIndex=15},function()
+            if id then selectedItem=id end
+        end)
+        slotObjects[i]=tile
+        if id then
+            stroke(tile,inventoryColor(id))
+            label(tile,itemSymbols[id] or "◆",{Position=UDim2.fromOffset(1,2),Size=UDim2.fromOffset(cell-2,27),TextSize=20,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Center,TextColor3=inventoryColor(id),ZIndex=16})
+            label(tile,tostring(itemCount[id]),{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-4,1,-3),Size=UDim2.fromOffset(28,15),TextSize=10,TextXAlignment=Enum.TextXAlignment.Right,Font=Enum.Font.GothamBold,ZIndex=16})
+            tile.InputBegan:Connect(function(input)
+                if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+                    dragState={item=id,slot=i,origin=input.Position,targets=equipTargets,slots=slotObjects}
+                end
+            end)
+        end
+    end
+    -- One-shot global pointer release avoids repeated connections every refresh.
+    if inventoryDropConnection then inventoryDropConnection:Disconnect() end
+    inventoryDropConnection=UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType~=Enum.UserInputType.MouseButton1 and input.UserInputType~=Enum.UserInputType.Touch then return end
+        local dragging=dragState
+        dragState=nil
+        if not dragging or not panelOpen or activeTab~="inventory" then return end
+        local point=Vector2.new(input.Position.X,input.Position.Y)
+        local kind=Config.Items[dragging.item] and Config.Items[dragging.item].kind
+        if kind=="weapon" and within(point,equipTargets.weapon) or kind=="armor" and within(point,equipTargets.armor) then
+            send("equip",{item=dragging.item})
+            return
+        end
+        for index,slot in ipairs(slotObjects) do
+            if within(point,slot) and index~=dragging.slot then
+                local occupant=order[index]
+                if occupant then inventoryPositions[occupant]=dragging.slot end
+                inventoryPositions[dragging.item]=index
+                renderPage()
+                return
+            end
+        end
+        if within(point,dragging.slots[dragging.slot]) then
+            selectedItem=dragging.item
+            renderPage()
+        end
+    end)
+    local item=Config.Items[selectedItem]
+    if not item or (itemCount[selectedItem] or 0)==0 then selectedItem=ids[1] or "sword1";item=Config.Items[selectedItem] end
+    label(contents,"Selecionado: "..(item and item.name or "nenhum").."   •   "..(item and itemDetails(selectedItem) or ""),{Position=UDim2.fromOffset(250,274),Size=UDim2.new(1,-260,0,28),TextSize=10,TextColor3=palette.teal,ZIndex=15})
 end
 local function showCraft()
     pageTitle.Text = "Forja & oficina"
@@ -2738,6 +3389,8 @@ renderPage = function()
     local scroll = body.CanvasPosition
     clearList(body)
     resetFooter()
+    body.ScrollingEnabled = true
+    if inventoryDropConnection then inventoryDropConnection:Disconnect(); inventoryDropConnection=nil end
     for id, tab in pairs(tabButtons) do
         tab.BackgroundColor3 = id == activeTab and palette.gold or palette.raised
         tab.TextColor3 = id == activeTab and palette.ink or palette.text
@@ -3014,7 +3667,7 @@ local ok, problem = xpcall(function()
         end
     end
     local shared = make("Folder","Brumavale",ReplicatedStorage)
-    shared:SetAttribute("Version",3)
+    shared:SetAttribute("Version",6)
     make("ModuleScript","Config",shared,Sources.Config)
     make("ModuleScript","CombatMath",shared,Sources.CombatMath)
     make("RemoteEvent","Action",shared)
@@ -3031,6 +3684,11 @@ local ok, problem = xpcall(function()
     assert(world and world.Parent == workspace,"A geração do mapa não retornou um mundo válido.")
     world:SetAttribute("BrumavaleGenerated",true)
     assert(world:FindFirstChild("TownSpawn",true),"Spawn não gerado.")
+    assert(world:GetAttribute("Version") == 6, "Mundo antigo gerado: versão incorreta.")
+    assert(not world:FindFirstChild("PortalPlaza",true), "PortalPlaza antiga encontrada no novo mundo.")
+    local portalCount = #world:WaitForChild("Portals"):GetChildren()
+    assert(portalCount >= 12, "Rede de portais incompleta: " .. portalCount)
+    print("[BRUMAVALE V6] Mundo verificado | Portais: " .. portalCount .. " | Sem PortalPlaza")
     main.Enabled = true
     client.Enabled = true
     assert(main.Enabled and client.Enabled, "Os scripts de runtime não foram ativados.")
@@ -3045,7 +3703,7 @@ if not ok then
 end
 if #previous == 0 then backup:Destroy() end
 pcall(function() ChangeHistoryService:SetWaypoint("Brumavale instalado") end)
-print("BRUMAVALE v3 instalado! Animações e ataques telegrafados ativados. Pressione Play.")
+print("[BRUMAVALE WORLD V6] 12 REGIOES 1800x1800 | PORTAIS NAS FRONTEIRAS | SEM PORTALPLAZA")
 print("I: mochila · C: forja · M: mapa · Q: golpe circular · R: poção.")
 print("Explore os prados, colete com E, clique em inimigos e volte à cidade para fabricar e negociar.")
 print("Studio usa progresso temporário. Em uma experiência publicada, o servidor usa DataStore com proteção de sessão.")

@@ -1,6 +1,6 @@
 -- Brumavale: all balance data is shared; only the server changes player state.
 local Config = {}
-Config.Version = 3
+Config.Version = 6
 Config.StartingSilver = 120
 Config.Capacity = 160
 Config.MarketTax = 0.05
@@ -38,17 +38,32 @@ Config.Recipes = {
 	sword3 = {ingredients={ingot=6,plank=3,crystal=6},amount=1,fee=90,level=4},
 }
 Config.Regions = {
-	{id="town",name="Porto Bruma",center={0,0,0},size=240,safe=true,level=1,color={74,113,104}},
-	{id="meadow",name="Prados do Sol",center={0,0,270},size=240,safe=false,level=1,color={109,151,77}},
-	{id="forest",name="Bosque Âmbar",center={270,0,0},size=240,safe=false,level=2,color={55,101,78}},
-	{id="quarry",name="Pedreira Cinzenta",center={-270,0,0},size=240,safe=false,level=3,color={116,119,129}},
-	{id="ruins",name="Ruínas da Aurora",center={0,0,-270},size=240,safe=false,level=4,color={77,82,113}},
+	{id="town",name="Porto Bruma",center={0,0,0},size=1800,safe=true,level=1,color={74,113,104}},
+	{id="meadow",name="Prados do Sol",center={0,0,2200},size=1800,safe=false,level=1,color={109,151,77}},
+	{id="forest",name="Bosque Âmbar",center={2200,0,0},size=1800,safe=false,level=2,color={55,101,78}},
+	{id="quarry",name="Pedreira Cinzenta",center={-2200,0,0},size=1800,safe=false,level=3,color={116,119,129}},
+	{id="ruins",name="Ruínas da Aurora",center={0,0,-2200},size=1800,safe=false,level=4,color={77,82,113}},
+	{id="marsh",name="Pântano Esquecido",center={-2200,0,2200},size=1800,safe=false,level=3,color={68,105,86}},
+	{id="highlands",name="Planalto dos Ventos",center={2200,0,2200},size=1800,safe=false,level=3,color={119,143,102}},
+	{id="frost",name="Picos de Gelo",center={2200,0,-2200},size=1800,safe=false,level=5,color={170,195,204}},
+	{id="ash",name="Ermos de Cinza",center={-2200,0,-2200},size=1800,safe=false,level=5,color={95,83,79}},
+	{id="canyon",name="Desfiladeiro Rubro",center={4400,0,0},size=1800,safe=false,level=5,color={161,100,77}},
+	{id="grove",name="Jardim Luminoso",center={0,0,4400},size=1800,safe=false,level=4,color={82,148,127}},
+	{id="citadel",name="Cidadela Perdida",center={0,0,-4400},size=1800,safe=false,level=6,color={81,74,105}},
 }
 Config.Enemies = {
 	slime = {name="Gosma do prado",health=42,damage=6,speed=8,xp=22,silver=8,loot={fiber=2},aggro=35,respawn=18,attack={name="Salto viscoso",shape="circle",range=6,radius=6,windup=0.9,cooldown=1.9}},
 	wolf = {name="Lobo âmbar",health=78,damage=11,speed=13,xp=40,silver=14,loot={hide=2},aggro=40,respawn=23,attack={name="Bote",shape="cone",range=9,angle=70,windup=0.7,cooldown=1.7}},
 	bandit = {name="Saqueador",health=105,damage=14,speed=10,xp=58,silver=22,loot={ore=2},aggro=38,respawn=26,attack={name="Corte frontal",shape="line",range=12,width=5,windup=1.0,cooldown=2.2}},
 	guardian = {name="Sentinela da aurora",health=240,damage=21,speed=8,xp=130,silver=60,loot={crystal=3},aggro=40,respawn=40,attack={name="Ruptura rúnica",shape="circle",range=14,radius=14,windup=1.5,cooldown=3.1}},
+	bogling = {name="Rastejante do pântano",health=82,damage=12,speed=9,xp=44,silver=15,loot={fiber=2},aggro=38,respawn=22,attack={name="Maré tóxica",shape="circle",radius=7,range=7,windup=1.2,cooldown=2.5}},
+	boar = {name="Javali selvagem",health=115,damage=17,speed=15,xp=63,silver=24,loot={hide=3},aggro=43,respawn=25,attack={name="Investida",shape="line",range=13,width=5,windup=0.8,cooldown=2.4}},
+	wisp = {name="Espírito errante",health=70,damage=14,speed=12,xp=58,silver=22,loot={crystal=1},aggro=42,respawn=24,attack={name="Clarão",shape="circle",radius=9,range=9,windup=1.1,cooldown=2.8}},
+	icewolf = {name="Lobo da geada",health=144,damage=20,speed=15,xp=83,silver=35,loot={hide=3},aggro=45,respawn=29,attack={name="Mordida congelante",shape="cone",range=10,angle=80,windup=0.8,cooldown=2.2}},
+	ashgolem = {name="Golem de cinzas",health=310,damage=28,speed=7,xp=165,silver=73,loot={ore=4},aggro=40,respawn=42,attack={name="Impacto vulcânico",shape="circle",radius=15,range=15,windup=1.6,cooldown=3.4}},
+	scorpion = {name="Escorpião rubro",health=155,damage=24,speed=12,xp=100,silver=40,loot={ore=2},aggro=44,respawn=30,attack={name="Ferrão",shape="cone",range=11,angle=65,windup=0.9,cooldown=2.6}},
+	knight = {name="Cavaleiro exilado",health=220,damage=29,speed=11,xp=140,silver=65,loot={ingot=2},aggro=43,respawn=35,attack={name="Golpe pesado",shape="line",range=15,width=7,windup=1.2,cooldown=2.8}},
+	ancient = {name="Colosso ancestral",health=650,damage=39,speed=7,xp=350,silver=180,loot={crystal=5},aggro=48,respawn=80,attack={name="Onda ancestral",shape="circle",radius=19,range=19,windup=2,cooldown=4.5}},
 }
 Config.Nodes = {
 	tree = {name="Árvore",item="wood",amount=3,respawn=18,xp=9,color={111,79,50}},

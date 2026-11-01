@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Brumavale"):WaitForChild("Config"))
 
 local World = {}
-local VERSION = 3
+local VERSION = 6
 local C = {
     stone = Color3.fromRGB(113, 125, 133), darkStone = Color3.fromRGB(55, 66, 78),
     wood = Color3.fromRGB(99, 65, 46), paleWood = Color3.fromRGB(160, 113, 66),
@@ -221,13 +221,13 @@ local function enemy(parent, kind, pos, index)
     local def = Config.Enemies[kind]
     assert(def, "Missing enemy configuration: " .. kind)
     local m = model(parent, kind .. "_" .. tostring(index))
-    if kind == "slime" then
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(4.5, 3.1, 4.5), pos + Vector3.new(0, 1.7, 0), Color3.fromRGB(114, 191, 135), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+    if kind == "slime" or kind == "bogling" or kind == "wisp" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(4.5, 3.1, 4.5), pos + Vector3.new(0, 1.7, 0), (kind == "wisp" and Color3.fromRGB(112,220,242) or kind == "bogling" and Color3.fromRGB(90,133,83) or Color3.fromRGB(114,191,135)), kind == "wisp" and Enum.Material.Neon or Enum.Material.SmoothPlastic, Enum.PartType.Ball))
         for _, x in ipairs({-0.8, 0.8}) do
             noCollision(part(m, "Eye", Vector3.new(0.65, 0.7, 0.3), pos + Vector3.new(x, 2.1, -2), C.ink, Enum.Material.SmoothPlastic, Enum.PartType.Ball))
         end
-    elseif kind == "wolf" then
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 2.4, 5), pos + Vector3.new(0, 2.7, 0), Color3.fromRGB(132, 142, 148), Enum.Material.Slate))
+    elseif kind == "wolf" or kind == "icewolf" or kind == "boar" or kind == "scorpion" then
+        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 2.4, 5), pos + Vector3.new(0, 2.7, 0), (kind == "icewolf" and Color3.fromRGB(196,215,231) or kind == "boar" and Color3.fromRGB(111,75,58) or kind == "scorpion" and Color3.fromRGB(147,62,52) or Color3.fromRGB(132,142,148)), Enum.Material.Slate))
         noCollision(part(m, "Head", Vector3.new(2.5, 2.3, 2.4), pos + Vector3.new(0, 3.5, -2.8), Color3.fromRGB(161, 169, 173)))
         noCollision(part(m, "Muzzle", Vector3.new(1.6, 1, 1.3), pos + Vector3.new(0, 3.1, -4.2), C.darkStone))
         for _, x in ipairs({-1, 1}) do
@@ -238,7 +238,7 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.4, 0.4, 0.2), pos + Vector3.new(x * 0.7, 3.8, -4.05), C.gold, Enum.Material.Neon))
         end
         noCollision(part(m, "Tail", Vector3.new(0.9, 0.9, 2.5), CFrame.new(pos + Vector3.new(0, 3, 3.1)) * CFrame.Angles(-0.25, 0, 0), C.darkStone))
-    elseif kind == "guardian" then
+    elseif kind == "guardian" or kind == "ashgolem" or kind == "ancient" then
         m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(5.5, 6, 3.5), pos + Vector3.new(0, 5.7, 0), C.darkStone, Enum.Material.Slate))
         noCollision(part(m, "Head", Vector3.new(3.2, 3, 3), pos + Vector3.new(0, 10, 0), C.stone, Enum.Material.Slate))
         noCollision(part(m, "Rune", Vector3.new(1.6, 2.2, 0.25), pos + Vector3.new(0, 6, -1.9), Color3.fromRGB(157, 124, 235), Enum.Material.Neon))
@@ -248,7 +248,9 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Eye", Vector3.new(0.75, 0.45, 0.2), pos + Vector3.new(x * 0.8, 10.2, -1.6), C.teal, Enum.Material.Neon))
         end
     else
-        m.PrimaryPart = noCollision(part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), Color3.fromRGB(105, 62, 68)))
+        local armorColor = kind == "knight" and Color3.fromRGB(56, 74, 102) or Color3.fromRGB(105, 62, 68)
+        local rootPart = part(m, "Root", Vector3.new(2.8, 3, 1.8), pos + Vector3.new(0, 3.9, 0), armorColor)
+        m.PrimaryPart = noCollision(rootPart)
         noCollision(part(m, "Head", Vector3.new(1.8, 1.8, 1.8), pos + Vector3.new(0, 6.3, 0), Color3.fromRGB(196, 156, 118)))
         noCollision(part(m, "Hood", Vector3.new(2, 0.7, 2), pos + Vector3.new(0, 7.35, 0), C.darkStone))
         noCollision(part(m, "Mask", Vector3.new(1.9, 0.7, 0.3), pos + Vector3.new(0, 5.95, -0.95), C.darkStone))
@@ -257,6 +259,83 @@ local function enemy(parent, kind, pos, index)
             noCollision(part(m, "Leg", Vector3.new(1, 2.4, 1.2), pos + Vector3.new(x * 0.75, 1.2, 0), C.darkStone))
         end
         noCollision(part(m, "Blade", Vector3.new(0.35, 4, 0.65), pos + Vector3.new(2.4, 4, -0.5), C.stone, Enum.Material.Metal))
+    end
+
+    -- Distinct silhouettes and readable weak-point accents, entirely offline.
+    local function ornament(name, size, offset, color, material, shape)
+        local p = noCollision(part(m, name, size, pos + offset, color, material or Enum.Material.SmoothPlastic, shape))
+        p.CanTouch = false
+        p.CanQuery = false
+        return p
+    end
+    if kind == "boar" then
+        for _, x in ipairs({-1, 1}) do
+            ornament("Tusk", Vector3.new(0.65, 1.6, 0.65), Vector3.new(x * 0.85, 2.9, -4.45), C.cream)
+            ornament("Bristle", Vector3.new(0.55, 1.65, 0.7), Vector3.new(x * 0.55, 4.25, -0.7), C.wood)
+        end
+        ornament("Snout", Vector3.new(2.1, 1.2, 0.7), Vector3.new(0, 3, -4.7), Color3.fromRGB(153, 98, 90))
+    elseif kind == "scorpion" then
+        for side = -1, 1 do
+            for index = 1, 4 do
+                ornament("ScorpionLeg", Vector3.new(2.7, 0.4, 0.55), Vector3.new(side * 2.35, 1.7, (index-2.5)*1.1), Color3.fromRGB(116,48,44))
+            end
+            ornament("Claw", Vector3.new(2, 1, 1.5), Vector3.new(side * 2.7, 2, -3.8), Color3.fromRGB(192,81,61))
+        end
+        ornament("Stinger", Vector3.new(0.9, 4.5, 0.9), Vector3.new(0, 5.6, 3.1), Color3.fromRGB(191,76,53))
+        ornament("StingerTip", Vector3.new(0.8, 1.4, 0.8), Vector3.new(0, 8, 3.4), C.ink)
+    elseif kind == "wolf" or kind == "icewolf" then
+        local fur = kind == "icewolf" and Color3.fromRGB(221,237,246) or Color3.fromRGB(86,105,111)
+        for side = -1, 1 do
+            ornament("FurTuft", Vector3.new(1.1, 1.45, 1.2), Vector3.new(side * 1.25, 3.4, -1.2), fur)
+            ornament("Fang", Vector3.new(0.3, 0.8, 0.3), Vector3.new(side * 0.65, 2.8, -4.5), C.cream)
+        end
+    elseif kind == "bogling" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("MireSpike", Vector3.new(0.6, 2.2, 0.6), Vector3.new(math.cos(angle)*1.3, 3.15, math.sin(angle)*1.3), Color3.fromRGB(47,91,59))
+        end
+    elseif kind == "wisp" then
+        for index = 1, 5 do
+            local angle = index * math.pi * 2 / 5
+            ornament("SpiritFlame", Vector3.new(0.85, 2.7, 0.85), Vector3.new(math.cos(angle)*2.1, 2.6, math.sin(angle)*2.1), Color3.fromRGB(140,232,255), Enum.Material.Neon, Enum.PartType.Ball)
+        end
+    elseif kind == "guardian" or kind == "ashgolem" or kind == "ancient" then
+        local glow = kind == "ashgolem" and Color3.fromRGB(255,110,54) or kind == "ancient" and Color3.fromRGB(196,126,255) or C.teal
+        for side = -1, 1 do
+            ornament("ShoulderPlate", Vector3.new(3.3, 2.1, 3), Vector3.new(side*3.8, 8, 0), C.darkStone, Enum.Material.Slate)
+            ornament("ArmRune", Vector3.new(0.5, 2.3, 0.3), Vector3.new(side*4, 5.7, -1.15), glow, Enum.Material.Neon)
+        end
+        ornament("HeartRune", Vector3.new(2.3, 2.8, 0.35), Vector3.new(0, 6, -2.1), glow, Enum.Material.Neon)
+        if kind == "ancient" then
+            for side = -1, 1 do ornament("CrownHorn", Vector3.new(1.1, 4, 1.1), Vector3.new(side*1.45, 12.6, 0), C.darkStone, Enum.Material.Slate) end
+        end
+    elseif kind == "knight" or kind == "bandit" then
+        ornament("Breastplate", Vector3.new(3.1, 2.6, 0.45), Vector3.new(0, 4.05, -1.15), kind == "knight" and C.stone or C.wood, Enum.Material.Metal)
+        ornament("Pauldron", Vector3.new(1.65, 1.2, 1.8), Vector3.new(1.85, 5.1, 0), C.darkStone, Enum.Material.Metal)
+        if kind == "knight" then ornament("HelmetCrest", Vector3.new(0.5, 1, 2.2), Vector3.new(0, 7.6, 0), C.gold, Enum.Material.Metal) end
+    end
+    -- Species-specific readable details, without requiring external assets.
+    if kind == "boar" then
+        ornament("Mane", Vector3.new(2.5, 1.1, 2.9), Vector3.new(0, 4.2, 0.6), C.wood, Enum.Material.Slate)
+        ornament("Nose", Vector3.new(1.6, 0.65, 0.35), Vector3.new(0, 3.05, -5.1), Color3.fromRGB(204,125,117))
+    elseif kind == "scorpion" then
+        for i = 1, 3 do
+            ornament("TailSegment", Vector3.new(1.1, 1.1, 1.3), Vector3.new(0, 3.3 + i*1.2, 3.3+i*0.23), Color3.fromRGB(139,56,49), Enum.Material.Slate)
+        end
+    elseif kind == "slime" then
+        ornament("InnerCore", Vector3.new(2.1, 1.9, 2.1), Vector3.new(0, 2, 0), Color3.fromRGB(152,241,178), Enum.Material.Neon, Enum.PartType.Ball)
+    elseif kind == "wisp" then
+        ornament("SpiritCore", Vector3.new(1.3, 1.3, 1.3), Vector3.new(0, 1.9, -0.3), C.cream, Enum.Material.Neon, Enum.PartType.Ball)
+    elseif kind == "icewolf" then
+        ornament("IceCrest", Vector3.new(1.05, 1.4, 2.8), Vector3.new(0, 4.25, 0.5), Color3.fromRGB(165,218,247), Enum.Material.Ice)
+    elseif kind == "ashgolem" or kind == "ancient" then
+        local glow = kind == "ashgolem" and Color3.fromRGB(244,91,44) or Color3.fromRGB(190,104,245)
+        for i = 1, 4 do
+            ornament("RiftGlow", Vector3.new(0.35, 1.5, 0.25), Vector3.new((i-2.5)*0.95, 4.2+i*0.5, -2.25), glow, Enum.Material.Neon)
+        end
+    elseif kind == "knight" then
+        ornament("Shield", Vector3.new(2.6, 3.5, 0.55), Vector3.new(-2.55, 3.8, -0.7), Color3.fromRGB(60,85,111), Enum.Material.Metal)
+        ornament("ShieldSigil", Vector3.new(1.25, 1.5, 0.15), Vector3.new(-2.55, 3.8, -1.05), C.gold, Enum.Material.Neon)
     end
     m:SetAttribute("EnemyType", kind)
     m:SetAttribute("Health", def.health)
@@ -324,6 +403,7 @@ end
 local function portal(parent, pos, region, name, color, rotation)
     local m = model(parent, "Gate_" .. region)
     m:SetAttribute("Region", region)
+    m:SetAttribute("Gateway", true)
     m.PrimaryPart = noCollision(part(m, "TravelStone", Vector3.new(9, 0.5, 9), pos + Vector3.new(0, 0.25, 0), color, Enum.Material.Neon))
     for _, x in ipairs({-6.4, 6.4}) do
         part(m, "Pillar", Vector3.new(2.4, 11, 3), pos + Vector3.new(x, 5.5, 0), C.darkStone, Enum.Material.Slate)
@@ -334,6 +414,57 @@ local function portal(parent, pos, region, name, color, rotation)
     prompt(m.PrimaryPart, "TravelPrompt", "Viajar", name, 0.4)
     if rotation then m:PivotTo(m.PrimaryPart.CFrame * CFrame.Angles(0, rotation, 0)) end
     return m
+end
+
+local function mountainRim(ground, decorations, region, center, size, rng)
+    local rim = model(ground, "BiomeCliffs_" .. region.id)
+    local palette = {
+        frost={Color3.fromRGB(151,183,205),Enum.Material.Ice},
+        ash={Color3.fromRGB(78,67,68),Enum.Material.Basalt},
+        canyon={Color3.fromRGB(169,98,69),Enum.Material.Sandstone},
+        forest={Color3.fromRGB(73,94,78),Enum.Material.Rock},
+        marsh={Color3.fromRGB(70,91,75),Enum.Material.Ground},
+        grove={Color3.fromRGB(79,130,107),Enum.Material.Grass},
+        meadow={Color3.fromRGB(116,145,90),Enum.Material.Ground},
+    }
+    local style = palette[region.id] or {C.darkStone,Enum.Material.Rock}
+    for side=1,4 do
+        for i=1,20 do
+            local segment=size/20+2
+            local h=rng:NextNumber(90,175)
+            local axis=(i-.5)*size/20-size/2
+            local pos,sz
+            if side<3 then
+                pos=center+Vector3.new(axis,h/2,(side==1 and -1 or 1)*(size/2-20))
+                sz=Vector3.new(segment,h,54)
+            else
+                pos=center+Vector3.new((side==3 and -1 or 1)*(size/2-20),h/2,axis)
+                sz=Vector3.new(54,h,segment)
+            end
+            part(rim,"RockFace",sz,pos,style[1],style[2])
+            local wedge=Instance.new("WedgePart")
+            wedge.Name="Ridgeline"
+            wedge.Anchored=true
+            wedge.Size=Vector3.new(sz.X,rng:NextNumber(15,42),sz.Z)
+            wedge.Color=style[1]
+            wedge.Material=style[2]
+            wedge.CFrame=CFrame.new(pos+Vector3.new(0,h/2+wedge.Size.Y/2,0))*CFrame.Angles(0,side<3 and 0 or math.pi/2,0)
+            wedge.Parent=rim
+        end
+    end
+    for i=1,30 do
+        local x,z=rng:NextNumber(-size*.4,size*.4),rng:NextNumber(-size*.4,size*.4)
+        if math.abs(x)>110 and math.abs(z)>110 then
+            local hill=Instance.new("WedgePart")
+            hill.Name="Hillside"
+            hill.Anchored=true
+            hill.Size=Vector3.new(rng:NextNumber(55,115),rng:NextNumber(14,48),rng:NextNumber(75,140))
+            hill.CFrame=CFrame.new(center+Vector3.new(x,hill.Size.Y/2,z))*CFrame.Angles(0,rng:NextNumber(0,6.28),0)
+            hill.Color=rgb(region.color,C.grass)
+            hill.Material=region.id=="frost" and Enum.Material.Snow or style[2]
+            hill.Parent=decorations
+        end
+    end
 end
 
 local function bridge(parent, pos, alongX)
@@ -406,7 +537,7 @@ function World.Build()
     -- The lagoon sits just above Roblox's default Baseplate, while all playable
     -- surfaces are lifted one stud below. A fresh Baseplate template therefore
     -- looks intentional without deleting or editing any user-owned object.
-    local water = noCollision(part(ground, "Lagoon", Vector3.new(820, 1, 820), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
+    local water = noCollision(part(ground, "Lagoon", Vector3.new(12500, 1, 12500), Vector3.new(0, -0.9, 0), Color3.fromRGB(43, 100, 119), Enum.Material.Glass))
     water.Transparency = 0.25
     water.CastShadow = false
     water.CanTouch = false
@@ -416,17 +547,15 @@ function World.Build()
         local color = rgb(region.color, C.grass)
         local land = part(ground, "Island_" .. region.id, Vector3.new(size, 8, size), center + Vector3.new(0, -3.95, 0), color, region.id == "quarry" and Enum.Material.Slate or Enum.Material.Grass)
         land:SetAttribute("Region", region.id)
+        mountainRim(ground, decor, region, center, size, rng)
         part(ground, "Cliff_" .. region.id, Vector3.new(size - 6, 18, size - 6), center + Vector3.new(0, -15, 0), C.darkStone, Enum.Material.Slate)
         -- The cardinal roads align with all inter-island bridges and remain clear.
         part(ground, "RoadNS", Vector3.new(14, 0.12, size), center + Vector3.new(0, 0.06, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         part(ground, "RoadEW", Vector3.new(size, 0.1, 14), center + Vector3.new(0, 0.05, 0), region.safe and Color3.fromRGB(153, 153, 132) or Color3.fromRGB(154, 141, 104), region.safe and Enum.Material.Cobblestone or Enum.Material.Ground)
         regionTitle(decor, region, center)
-        if not region.safe then
-            portal(portals, center + Vector3.new(-24, 0, 8), "town", "Voltar a Brumavale", C.teal)
-        end
+        -- Border portals are placed by the adjacency graph below.
     end
-    for _, p in ipairs({Vector3.new(0, 0, 135), Vector3.new(0, 0, -135)}) do bridge(ground, p, false) end
-    for _, p in ipairs({Vector3.new(135, 0, 0), Vector3.new(-135, 0, 0)}) do bridge(ground, p, true) end
+    -- Expanded islands are connected through travel portals instead of short bridges.
 
     -- Town square: readable approaches, service counters, fountain and waystones.
     part(ground, "TownSquare", Vector3.new(116, 0.16, 116), Vector3.new(0, 0.08, 10), Color3.fromRGB(159, 155, 130), Enum.Material.Cobblestone)
@@ -463,13 +592,21 @@ function World.Build()
     for _, location in ipairs({{-18, 15}, {18, 15}, {-56, 24}, {56, 24}, {-20, -50}, {20, -50}}) do
         lantern(decor, Vector3.new(location[1], 0, location[2]))
     end
-    local townGates = {
-        {"meadow", Vector3.new(0, 0, 88)}, {"forest", Vector3.new(88, 0, 0)},
-        {"quarry", Vector3.new(-88, 0, 0)}, {"ruins", Vector3.new(0, 0, -88)},
-    }
-    for _, entry in ipairs(townGates) do
-        local region = assert(regionsById[entry[1]], "Missing region " .. entry[1])
-        portal(portals, entry[2], region.id, region.name, rgb(region.color, C.teal), entry[2].X ~= 0 and math.pi / 2 or nil)
+    -- Each gate connects physically neighboring provinces, not a city hub.
+    for _, origin in ipairs(Config.Regions) do
+        local c=vector(origin.center)
+        for _, dest in ipairs(Config.Regions) do
+            local dx=dest.center[1]-origin.center[1]
+            local dz=dest.center[3]-origin.center[3]
+            if (math.abs(dx)==2200 and dz==0) or (math.abs(dz)==2200 and dx==0) then
+                local dir=Vector3.new(dx==0 and 0 or dx/math.abs(dx),0,dz==0 and 0 or dz/math.abs(dz))
+                local gate=portal(portals,c+dir*(origin.size*.36),dest.id,dest.name,rgb(dest.color,C.teal),dx~=0 and math.pi/2 or nil)
+                gate:SetAttribute("OriginRegion",origin.id)
+                local roadCenter=c+dir*(origin.size*.21)
+                local roadSize=dx~=0 and Vector3.new(origin.size*.34,.14,15) or Vector3.new(15,.14,origin.size*.34)
+                part(ground,"GateTrail",roadSize,roadCenter+Vector3.new(0,.12,0),C.paleWood,Enum.Material.Ground)
+            end
+        end
     end
 
     -- Resource placements are curated around the roads, never on arrival areas.
@@ -483,23 +620,42 @@ function World.Build()
         forest = {{"tree", -45, 45}, {"tree", 40, 40}, {"tree", 65, -35}, {"tree", -55, -50}, {"tree", 85, 60}, {"tree", -80, 75}, {"fiber", 30, -40}, {"fiber", -35, 50}, {"rock", -70, -70}},
         quarry = {{"rock", -40, 45}, {"rock", 40, 40}, {"rock", 68, -35}, {"ore", -55, -50}, {"ore", 65, 65}, {"ore", -80, 70}, {"ore", 30, -45}, {"ore", -35, 65}, {"crystal", -85, -80}},
         ruins = {{"crystal", -45, 40}, {"crystal", 40, 50}, {"crystal", -65, -40}, {"ore", -85, 65}, {"rock", 75, 75}, {"fiber", 25, -40}},
+        marsh = {{"fiber",-100,90},{"tree",95,-100},{"rock",120,120}},
+        highlands = {{"tree",105,105},{"rock",-120,-110},{"fiber",90,-90}},
+        frost = {{"rock",-120,95},{"ore",105,-110},{"crystal",130,100}},
+        ash = {{"ore",110,120},{"rock",-125,-125},{"crystal",110,-100}},
+        canyon = {{"ore",115,95},{"rock",-110,-120},{"crystal",125,-90}},
+        grove = {{"fiber",105,110},{"tree",-115,-100},{"crystal",110,-100}},
+        citadel = {{"crystal",120,-120},{"ore",-120,105},{"rock",-105,-105}},
     }
     for _, region in ipairs(Config.Regions) do
         for _, row in ipairs(layouts[region.id] or {}) do node(region.id, row[1], row[2], row[3]) end
+        if not region.safe then
+            local kinds = region.id == "marsh" and {"fiber","tree","rock"} or
+                region.id == "grove" and {"fiber","tree","crystal"} or
+                region.id == "meadow" and {"fiber","tree","rock"} or
+                region.id == "forest" and {"tree","fiber","rock"} or {"rock","ore","crystal"}
+            for n = 1, 15 do
+                local x, z = rng:NextNumber(-208,208), rng:NextNumber(-208,208)
+                if math.abs(x) > 24 and math.abs(z) > 24 then
+                    node(region.id, kinds[(n % #kinds)+1], x, z)
+                end
+            end
+        end
     end
     -- Low-density border vegetation creates silhouettes while limiting draw calls.
     for _, region in ipairs(Config.Regions) do
         local center = vector(region.center)
-        if region.id == "town" or region.id == "meadow" or region.id == "forest" then
-            for n = 1, 10 do
-                local angle = n * math.pi * 0.2 + 0.17
-                local pos = center + Vector3.new(math.cos(angle) * 104, 0, math.sin(angle) * 104)
+        if region.id == "town" or region.id == "meadow" or region.id == "forest" or region.id == "grove" or region.id == "marsh" or region.id == "highlands" then
+            for n = 1, 24 do
+                local angle = n * math.pi / 12 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 208, 0, math.sin(angle) * 208)
                 if region.id == "forest" then pine(decor, pos, rng) else tree(decor, pos, rng, region.id == "town") end
             end
         else
-            for n = 1, 10 do
-                local angle = n * math.pi * 0.2 + 0.17
-                local pos = center + Vector3.new(math.cos(angle) * 106, 0, math.sin(angle) * 106)
+            for n = 1, 24 do
+                local angle = n * math.pi / 12 + 0.17
+                local pos = center + Vector3.new(math.cos(angle) * 208, 0, math.sin(angle) * 208)
                 part(decor, "CliffBoulder", Vector3.new(rng:NextNumber(9, 16), rng:NextNumber(7, 16), rng:NextNumber(9, 16)), CFrame.new(pos + Vector3.new(0, 3, 0)) * CFrame.Angles(0.1, angle, 0.15), C.darkStone, Enum.Material.Slate)
             end
         end
@@ -518,18 +674,60 @@ function World.Build()
         noCollision(part(decor, "ForestMushroom", Vector3.new(2.6, 1.3, 2.6), forestCenter + Vector3.new(-65 + n * 4, 1.5, 35), Color3.fromRGB(155, 110, 181), Enum.Material.SmoothPlastic, Enum.PartType.Ball))
     end
 
+    -- Three recognizable landmarks per wilderness region.
+    for _, region in ipairs(Config.Regions) do
+        if not region.safe then
+            local center = vector(region.center)
+            local landmark = model(decor, "Landmark_" .. region.id)
+            for n = 1, 3 do
+                local position = center + Vector3.new((n-2)*65+85, 0, n%2==0 and 140 or -140)
+                if region.id == "ruins" or region.id == "citadel" or region.id == "ash" then
+                    for k = 1, 4 do
+                        part(landmark, "AncientColumn", Vector3.new(4, 8+k*2, 4), position+Vector3.new(k*7,4+k,0),C.darkStone,Enum.Material.Slate)
+                    end
+                elseif region.id == "quarry" or region.id == "canyon" or region.id == "frost" then
+                    for k = 1, 5 do
+                        part(landmark,"RockFormation",Vector3.new(7+k,6+k*2,7+k),position+Vector3.new(k*7,3+k,0),C.stone,Enum.Material.Slate)
+                    end
+                else
+                    house(landmark, position, n*0.7,C.roof)
+                    lantern(landmark,position+Vector3.new(18,0,9))
+                end
+                crate(landmark,position+Vector3.new(-12,0,14),3)
+            end
+        end
+    end
     local enemyIndex = 0
     local spawns = {
         meadow = {{"slime", -68, 40}, {"slime", 65, 50}, {"slime", 45, -70}, {"slime", -65, -65}},
         forest = {{"wolf", -70, 42}, {"wolf", 72, 40}, {"wolf", 45, -75}, {"bandit", -65, -70}},
         quarry = {{"bandit", -70, 40}, {"bandit", 75, 40}, {"bandit", 45, -72}},
         ruins = {{"bandit", -70, 40}, {"bandit", -60, -65}, {"guardian", 65, -55}},
+        marsh = {{"bogling",-110,110},{"bogling",100,-120},{"boar",125,100}},
+        highlands = {{"boar",-120,100},{"wolf",120,-120},{"bandit",100,120}},
+        frost = {{"icewolf",-120,110},{"icewolf",120,-110},{"wisp",110,120}},
+        ash = {{"ashgolem",-120,105},{"wisp",120,-115},{"ashgolem",110,110}},
+        canyon = {{"scorpion",-120,110},{"scorpion",120,-100},{"knight",115,120}},
+        grove = {{"wisp",-120,105},{"boar",120,-120},{"wisp",110,110}},
+        citadel = {{"knight",-120,100},{"knight",120,-110},{"ancient",105,115}},
     }
     for _, region in ipairs(Config.Regions) do
-        for _, row in ipairs(spawns[region.id] or {}) do
-            enemyIndex = enemyIndex + 1
-            local m = enemy(enemies, row[1], vector(region.center) + Vector3.new(row[2], 0, row[3]), enemyIndex)
-            m:SetAttribute("Region", region.id)
+        if not region.safe then
+            local entries = spawns[region.id] or {}
+            for _, row in ipairs(entries) do
+                enemyIndex += 1
+                local m = enemy(enemies,row[1],vector(region.center)+Vector3.new(row[2],0,row[3]),enemyIndex)
+                m:SetAttribute("Region",region.id)
+            end
+            for n = 1, 5 do
+                local kind = entries[(n % #entries)+1][1]
+                local x,z = rng:NextNumber(-205,205),rng:NextNumber(-205,205)
+                if math.abs(x) < 24 then x += 50 end
+                if math.abs(z) < 24 then z += 50 end
+                enemyIndex += 1
+                local m = enemy(enemies,kind,vector(region.center)+Vector3.new(x,0,z),enemyIndex)
+                m:SetAttribute("Region",region.id)
+            end
         end
     end
 

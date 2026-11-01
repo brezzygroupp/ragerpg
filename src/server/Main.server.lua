@@ -444,12 +444,67 @@ local function animateMonsterAttack(record, now)
 	if now >= attackState.resolves then resolveMonsterAttack(record) end
 end
 
+
+-- Each anchored enemy has a lightweight procedural rig: relative part poses
+-- are evaluated after movement. No uploaded animations or external assets.
+local function captureEnemyRig(model)
+    local rest = {}
+    local pivot = model:GetPivot()
+    for _, item in ipairs(model:GetDescendants()) do
+        if item:IsA("BasePart") and item ~= model.PrimaryPart then
+            table.insert(rest, {part=item, offset=pivot:ToObjectSpace(item.CFrame), name=item.Name})
+        end
+    end
+    return rest
+end
+
+local function poseEnemy(record, now, moving, distance)
+    if distance > 120 and not record.attack then return end
+    local model = record.model
+    if not model.PrimaryPart then return end
+    local state = model:GetAttribute("AttackState")
+    local attacking = state == "Windup" or state == "Impact"
+    local rate = record.config.speed > 12 and 9 or 6
+    local phase = now * rate + record.phase
+    local intensity = moving and 1 or 0.12
+    local rise = math.sin(phase * 2) * (moving and 0.13 or 0.05)
+    local attackWave = attacking and math.sin(now * 18) * 0.24 or 0
+    local creature = model:GetAttribute("EnemyType")
+    local stagger = math.max(0, 1 - (now - (record.lastHit or -100)) / 0.35)
+    local windup = record.attack and math.clamp((now - record.attack.started) / record.attack.windup, 0, 1) or 0
+    local root = model:GetPivot()
+    for _, joint in ipairs(record.rig) do
+        local p = joint.part
+        if p.Parent then
+            local name = joint.name
+            local transform = CFrame.new(0, rise, 0)
+            if name == "Leg" or name == "ScorpionLeg" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and 0 or math.pi)) * (creature == "scorpion" and 0.42 or 0.32) * intensity, 0, 0)
+            elseif name == "Arm" or name == "Claw" then
+                local side = joint.offset.Position.X >= 0 and 1 or -1
+                transform = transform * CFrame.Angles(math.sin(phase + (side == 1 and math.pi or 0)) * 0.24 * intensity - attackWave, 0, side * attackWave)
+            elseif name == "Tail" or name == "Stinger" or name == "StingerTip" or name == "TailSegment" then
+                transform = transform * CFrame.Angles(math.sin(phase * 0.6) * 0.15 - (creature == "scorpion" and windup * 0.45 or 0), math.sin(phase * 0.7) * 0.25, 0)
+            elseif name == "Head" or name == "HelmetCrest" or name == "CrownHorn" or name == "Hood" or name == "Mask" then
+                transform = transform * CFrame.Angles(-attackWave * 0.7, math.sin(phase * 0.35) * 0.08, 0)
+            elseif name == "SpiritFlame" or name == "MireSpike" or name == "SpiritCore" or name == "InnerCore" then
+                transform = transform * CFrame.new(0, math.sin(phase + joint.offset.Position.X) * 0.4, 0)
+            end
+            if stagger > 0 then transform = transform * CFrame.Angles(math.rad(14) * stagger, 0, math.rad(10) * stagger) end
+            p.CFrame = root * joint.offset * transform
+        end
+    end
+end
+
+local mobIndex = 0
 for _, model in ipairs(world.Enemies:GetChildren()) do
 	local config = Config.Enemies[model:GetAttribute("EnemyType")]
 	if model:IsA("Model") and model.PrimaryPart and config then
+        mobIndex += 1
 		local record = {
-			model=model, config=config, health=config.health, home=model:GetPivot(),
-			appearance=savedAppearance(model), nextAttack=0, attack=nil, target=nil,
+			model=model, index=mobIndex, config=config, health=config.health, home=model:GetPivot(),
+			appearance=savedAppearance(model), rig=captureEnemyRig(model), phase=#model.Name * 0.71, nextAttack=0, attack=nil, target=nil,
 		}
 		mobs[model] = record
 		model:SetAttribute("Alive", true)
@@ -462,11 +517,16 @@ local function hurtEnemy(player, record, amount)
 	if record.health <= 0 then return end
 	record.health = math.max(0, record.health - amount)
 	record.target = player
+    record.lastHit = os.clock()
 	updateEnemyLabel(record)
 	if record.health > 0 then return end
 	cancelMonsterAttack(record)
 	record.model:SetAttribute("Alive", false)
-	visibility(record.model, false, record.appearance)
+    record.model:SetAttribute("AttackState", "Dead")
+    record.model:PivotTo(record.model:GetPivot() * CFrame.Angles(math.rad(62), 0, math.rad(10)))
+    task.delay(0.4, function()
+        if record.model.Parent and record.health <= 0 then visibility(record.model, false, record.appearance) end
+    end)
 	local profile = Profiles.Get(player)
 	if profile then
 		profile.stats.kills += 1
@@ -482,6 +542,8 @@ local function hurtEnemy(player, record, amount)
 		record.model:PivotTo(record.home)
 		record.health, record.target, record.nextAttack, record.attack = record.config.health, nil, 0, nil
 		record.model:SetAttribute("Alive", true)
+        record.model:SetAttribute("AttackState", "Idle")
+        record.lastHit = nil
 		visibility(record.model, true, record.appearance)
 		updateEnemyLabel(record)
 	end)
@@ -584,17 +646,23 @@ local function travel(player, id)
 	if not destination then return end
 	local validPortal = false
 	for _, portal in ipairs(world.Portals:GetChildren()) do
-		if portal:GetAttribute("Region") == id and portal.PrimaryPart
-			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 18 then
+		if portal:GetAttribute("Region") == id and portal:GetAttribute("OriginRegion") == (regionAt(root.Position) and regionAt(root.Position).id) and portal.PrimaryPart
+			and (root.Position - portal.PrimaryPart.Position).Magnitude <= 16 then
 			validPortal = true; break
 		end
 	end
 	if not validPortal then notify(player, "Aproxime-se do portal dessa região."); return end
 	if not cooldown(player, "travel", 2) then return end
-	local position = Vector3.new(table.unpack(destination.center)) + Vector3.new(0, 5, 20)
+	local previous = regionAt(root.Position)
+    local arrivalCenter=Vector3.new(table.unpack(destination.center))
+    local previousCenter=previous and Vector3.new(table.unpack(previous.center)) or Vector3.zero
+    local incoming=previousCenter-arrivalCenter
+    if incoming.Magnitude < 1 then return end
+    local position=arrivalCenter+incoming.Unit*(destination.size*.32)+Vector3.new(0,7,0)
 	player.Character:PivotTo(CFrame.new(position))
 	root.AssemblyLinearVelocity, root.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
 	sessions[player].region = id
+    sessions[player].lastPortalAt = os.clock()
 	player:SetAttribute("Region", id)
 	update(player, "Você chegou a " .. destination.name .. ".")
 end
@@ -829,6 +897,7 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		if record.attack then
 			animateMonsterAttack(record, now)
+			poseEnemy(record, now, false, 0)
 			continue
 		end
 		local position = model.PrimaryPart.Position
@@ -851,13 +920,44 @@ RunService.Heartbeat:Connect(function(dt)
 		local attackDefinition = record.config.attack or {range=5.5}
 		local attackRange = attackDefinition.range or attackDefinition.radius or 5.5
 		local stopDistance = targetRoot and math.max(3.2, math.min(attackRange * 0.82, attackRange - 0.35)) or 0.5
-		if flat.Magnitude > stopDistance then
-			local advance = flat.Unit * math.min(flat.Magnitude, record.config.speed * step)
-			local nextPosition = model:GetPivot().Position + advance
-			model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + flat.Unit))
-		elseif targetHumanoid and now >= (record.nextAttack or 0) and lineOfSight(target.Character, model) then
-			startMonsterAttack(record, targetRoot, now)
-		end
+        -- Attack first: an enemy already within its attack radius should not
+        -- freeze indefinitely while trying to move toward the exact same point.
+        local inRange = targetRoot ~= nil and flat.Magnitude <= attackRange
+        if targetHumanoid and inRange and now >= (record.nextAttack or 0)
+            and (lineOfSight(target.Character, model) or flat.Magnitude < 7) then
+            startMonsterAttack(record, targetRoot, now)
+        else
+            -- Soft separation keeps enemies from occupying each other's space.
+            -- All models are anchored, so Roblox physics cannot separate them.
+            local push = Vector3.zero
+            local neighbors = 0
+            for otherModel, other in pairs(mobs) do
+                if other ~= record and other.health > 0 and otherModel.PrimaryPart then
+                    local difference = position - otherModel.PrimaryPart.Position
+                    local horizontal = Vector3.new(difference.X, 0, difference.Z)
+                    local distance = horizontal.Magnitude
+                    local clearance = (record.config.health >= 300 or other.config.health >= 300) and 9 or 6.8
+                    if distance < clearance then
+                        if distance < 0.1 then
+                            local angle = record.index * 2.399963 + other.index * 0.71
+                            horizontal = Vector3.new(math.cos(angle), 0, math.sin(angle))
+                            distance = 1
+                        end
+                        push += horizontal.Unit * ((clearance - distance) / clearance)
+                        neighbors += 1
+                    end
+                end
+            end
+            if neighbors > 0 then push = push / math.sqrt(neighbors) end
+            local seek = flat.Magnitude > stopDistance and flat.Unit or Vector3.zero
+            local desired = seek + push * 2.4
+            if desired.Magnitude > 0.02 then
+                local velocity = desired.Unit * math.min(record.config.speed * step, math.max(2, flat.Magnitude))
+                local nextPosition = model:GetPivot().Position + velocity
+                model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + desired.Unit))
+            end
+        end
+		poseEnemy(record, now, flat.Magnitude > stopDistance, target and nearest or math.huge)
 		if not target and (model:GetPivot().Position - record.home.Position).Magnitude < 1 and record.health < record.config.health then
 			record.health = record.config.health
 			updateEnemyLabel(record)
@@ -870,6 +970,19 @@ RunService.Heartbeat:Connect(function(dt)
 			local root, humanoid = body(player)
 			if root and session.ready then
 				local region = regionAt(root.Position)
+                -- Never allow walking, jumping or falling into another map.
+                -- Travel() is the only legitimate cross-region transfer.
+                if not region or (session.region and region.id ~= session.region) then
+                    local old
+                    for _, defined in ipairs(Config.Regions) do
+                        if defined.id == (session.region or "town") then old=defined break end
+                    end
+                    old=old or Config.Regions[1]
+                    local safePoint = Vector3.new(table.unpack(old.center)) + Vector3.new(0,7, old.safe and -120 or 90)
+                    player.Character:PivotTo(CFrame.new(safePoint))
+                    root.AssemblyLinearVelocity=Vector3.zero
+                    region=old
+                end
 				local id = region and region.id or "wilds"
 				if id ~= session.region then
 					session.region = id
